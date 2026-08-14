@@ -45,6 +45,20 @@ ensure_local_node() {
     return
   fi
 
+  local existing_node existing_node_root
+  existing_node=$(command -v node || true)
+  if [[ -n "$existing_node" ]] \
+    && [[ "$("$existing_node" -p 'process.versions.node')" == "$required_node_version" ]]; then
+    existing_node_root=$(cd "$(dirname "$existing_node")/.." && pwd -P)
+    if [[ -x "$existing_node_root/bin/corepack" ]]; then
+      mkdir -p "$runtime_directory"
+      rm -rf "$node_root"
+      ln -s "$existing_node_root" "$node_root"
+      echo "Using the existing Node.js $required_node_version runtime."
+      return
+    fi
+  fi
+
   local archive_stem archive_name distribution_url checksums_url temporary_directory expected_checksum actual_checksum
   archive_stem=$(node_archive_for_host)
   archive_name="$archive_stem.tar.gz"

@@ -18,5 +18,5 @@ if [[ -e "$install_directory" ]]; then
   exit 73
 fi
 
-git clone --branch master --single-branch "$repository_url" "$install_directory"
+git clone --branch master --single-branch --depth 1 --no-tags "$repository_url" "$install_directory"
 exec bash "$install_directory/apps/desktop/install.sh"

@@ -4,7 +4,7 @@ English | 中文
 
 A direction-validation prototype for the desktop form of the GUI: a thin native AppKit window (`WKWebView`) around the existing Web host. It implements the "thin native shell + `dsh web` subprocess" option — zero protocol changes, the [IPC carrier](../../.agents/notes/implemented/architecture/2026-07-19-gui-layering-and-rpc-protocol.md) remains the designed next step.
 
-The shell deliberately embeds **no Node runtime in `DSH.app`**. The installer downloads the verified Node.js 24.15.0 archive into `apps/desktop/.runtime/node`; Finder and Dock launches prefer that managed runtime, then fall back to a compatible user-installed Node (`^22.19.0 || >=24.0.0`).
+The shell deliberately embeds **no Node runtime in `DSH.app`**. The installer first reuses an existing Node.js 24.15.0 runtime, otherwise downloads the verified archive into `apps/desktop/.runtime/node`; Finder and Dock launches prefer that managed runtime, then fall back to a compatible user-installed Node (`^22.19.0 || >=24.0.0`).
 
 ## Behavior
 
@@ -24,7 +24,7 @@ cd deepseek-harness-desktop
 bash apps/desktop/install.sh
 ```
 
-The bootstrap baseline is **Node.js 24.15.0** and **pnpm 11.7.0**, both managed by the installer. `install.sh` verifies the official Node.js checksum, downloads that runtime into `apps/desktop/.runtime`, and uses its Corepack to run the pinned pnpm release before installing, building, and opening the app. It also asks whether to add a `/Applications/DeepSeek Harness.app` symlink to the in-tree bundle. This makes the app discoverable through Finder, Spotlight, and the Dock without copying it away from the source checkout, so updates still work. The bundle is ad-hoc signed and includes `Resources/icon.icns`; no release runtime or Node bundle is published. The host listens on loopback only.
+The bootstrap baseline is **Node.js 24.15.0** and **pnpm 11.7.0**. `install.sh` reuses an exact existing Node runtime when it includes Corepack; otherwise it verifies the official Node.js checksum and downloads a managed runtime into `apps/desktop/.runtime`. It uses Corepack to run the pinned pnpm release before installing, building, and opening the app. It also asks whether to add a `/Applications/DeepSeek Harness.app` symlink to the in-tree bundle. This makes the app discoverable through Finder, Spotlight, and the Dock without copying it away from the source checkout, so updates still work. The bundle is ad-hoc signed and includes `Resources/icon.icns`; no release runtime or Node bundle is published. The host listens on loopback only.
 
 ## Known MVP limits
 
@@ -37,7 +37,7 @@ The bootstrap baseline is **Node.js 24.15.0** and **pnpm 11.7.0**, both managed 
 
 桌面端方向验证原型：用一个原生 AppKit 窗口（`WKWebView`）套住现有 Web 宿主，即“薄原生壳 + `dsh web` 子进程”方案，不改任何协议；仓库架构预留的正路（IPC carrier 子类）仍是下一步。
 
-壳**不在 `DSH.app` 内捆绑 Node 运行时**：安装器会把已校验的 Node.js 24.15.0 archive 下载到 `apps/desktop/.runtime/node`；Finder 与 Dock 启动时优先使用这份受管理的 runtime，其次才查找满足 `^22.19.0 || >=24.0.0`（仓库 engines 约束）的用户 Node。
+壳**不在 `DSH.app` 内捆绑 Node 运行时**：安装器会优先复用现有的 Node.js 24.15.0；否则把已校验的 archive 下载到 `apps/desktop/.runtime/node`。Finder 与 Dock 启动时优先使用这份受管理的 runtime，其次才查找满足 `^22.19.0 || >=24.0.0`（仓库 engines 约束）的用户 Node。
 
 ## 行为
 
@@ -57,7 +57,7 @@ cd deepseek-harness-desktop
 bash apps/desktop/install.sh
 ```
 
-安装器管理的基线是 **Node.js 24.15.0** 与 **pnpm 11.7.0**。`install.sh` 会校验官方 Node.js checksum，将 runtime 下载到 `apps/desktop/.runtime`，再通过其 Corepack 使用锁定版本的 pnpm，完成依赖安装、构建和应用启动。它还会询问是否在 `/Applications/DeepSeek Harness.app` 创建指向仓库内 bundle 的符号链接。这样可通过 Finder、Spotlight 和 Dock 找回应用，又不把它复制出源码 checkout，更新功能仍然可用。应用为 ad-hoc 签名并包含 `Resources/icon.icns`，不发布内置 runtime 或 Node 的二进制包。宿主仅监听 loopback。
+安装器使用的基线是 **Node.js 24.15.0** 与 **pnpm 11.7.0**。若现有的精确 Node runtime 包含 Corepack，`install.sh` 会直接复用它；否则会校验官方 Node.js checksum，再将受管理的 runtime 下载到 `apps/desktop/.runtime`。之后通过 Corepack 使用锁定版本的 pnpm，完成依赖安装、构建和应用启动。它还会询问是否在 `/Applications/DeepSeek Harness.app` 创建指向仓库内 bundle 的符号链接。这样可通过 Finder、Spotlight 和 Dock 找回应用，又不把它复制出源码 checkout，更新功能仍然可用。应用为 ad-hoc 签名并包含 `Resources/icon.icns`，不发布内置 runtime 或 Node 的二进制包。宿主仅监听 loopback。
 
 ## 已知 MVP 限制
 
