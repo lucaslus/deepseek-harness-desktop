@@ -1,57 +1,47 @@
-# DeepSeek Harness
+# DeepSeek Harness Desktop
 
 English | [中文](README.zh.md)
 
-DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
+DeepSeek Harness Desktop is a macOS desktop shell for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It runs the upstream Web UI in a native AppKit window while keeping your source checkout and Node.js runtime on your own machine.
 
-It uses an architecture where **everything is a plugin**, and is powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://github.com/cordiverse/paper).
+## Install on macOS
 
-## Developer preview
-
-DeepSeek Harness is currently in _developer preview_ and is iterating rapidly. **THERE WILL BE COMPATIBILITY-BREAKING CHANGES.**
-
-## Run
-
-### Run from `npm`
-
-Install `Node.js`, then run:
+Run:
 
 ```sh
-npx @deepseek-ai/dsh web
+curl -fsSL https://raw.githubusercontent.com/lucaslus/deepseek-harness-desktop/master/apps/desktop/bootstrap.sh | bash
 ```
 
-The command starts the Web UI, served at `http://127.0.0.1:3080` by default. See [Web UI guide](docs/user/guide/index.md).
+The command clones this repository into `~/.dsh-desktop`, downloads the verified Node.js 24.15.0 runtime into that checkout, uses its bundled Corepack to select pnpm 11.7.0, builds the app, and opens it. The installer asks whether to add **DeepSeek Harness** to `/Applications`; choosing `y` adds a symlink rather than a duplicate copy, so Finder, Spotlight, and the Dock can open the current in-tree app.
 
-### Run from source
+Node.js is not embedded in the app or published as a large Release, and no global Node or pnpm installation is required. On a Mac without Git or the Swift compiler, macOS displays its one-time Command Line Tools confirmation; complete it and rerun the command.
 
-To run from a repository checkout:
+## Update
+
+Choose **Update and Restart…** from the application menu. The app first runs `git pull --ff-only` against `origin/master`; only if that succeeds does it install the locked dependencies, rebuild itself, and restart. A manual update therefore rebuilds even when Git reports “Already up to date”, but it never applies a non-`master` branch or an unmerged upstream change.
+
+Updates refuse a checkout with uncommitted changes or a non-fast-forward Git history, so local work is not overwritten.
+
+## Install from a checkout
+
+If you want a different working directory:
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
-cd deepseek-harness
-pnpm install
-pnpm run build
-pnpm dsh web
+git clone https://github.com/lucaslus/deepseek-harness-desktop.git
+cd deepseek-harness-desktop
+bash apps/desktop/install.sh
 ```
 
-## Community and support
+See [desktop implementation details](apps/desktop/README.md) for runtime behavior and known limits.
 
-- Feel free to submit feedback or bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions).
-- Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
-- Join <a href="https://discord.gg/Ycq5dCaS4">DeepSeek Harness Discord community</a>.
+## Upstream
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+This project is a desktop-oriented fork of DeepSeek Harness. The upstream project supplies the harness, Web UI, and plugin architecture; this fork carries the native macOS shell and desktop workflow. Upstream source: [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness).
 
 ## Development
 
-Start with the [development guide](docs/development.md) and [architecture documentation](docs/architecture.md).
-
-For agents, follow [AGENTS.md](AGENTS.md).
+Read the [development guide](docs/development.md) and [architecture documentation](docs/architecture.md). For agents, follow [AGENTS.md](AGENTS.md).
 
 ## License
 
-[MIT](LICENSE)
-
-Third-party dependencies and their licenses are disclosed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE). Third-party licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

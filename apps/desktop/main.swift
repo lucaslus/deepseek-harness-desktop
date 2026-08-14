@@ -1,7 +1,7 @@
 // DSH desktop shell (MVP): a native macOS window around `dsh web`.
 //
 // Responsibilities are deliberately tiny — the Node harness owns everything:
-//   1. Locate a usable Node runtime (never bundled; prompt to install when absent).
+//   1. Locate the installer's managed Node runtime, then a compatible local fallback.
 //   2. Spawn the host (`node apps/cli/lib/bin.js web --port 0`, or `pnpm dsh web`).
 //   3. Parse the `dsh web: http://127.0.0.1:<port>` readiness line.
 //   4. Show the GUI in a WKWebView; tear the host down on quit.
@@ -111,16 +111,30 @@ func resolveRepositoryRoot() -> String? {
         return override
     }
     // The bundle lives at <repo>/apps/desktop/build/DSH.app when built in-tree.
-    if let bundlePath = Bundle.main.bundlePath as NSString? {
-        var candidate = bundlePath.deletingLastPathComponent
-        for _ in 0..<6 {
-            if valid(candidate) { return candidate }
-            let parent = (candidate as NSString).deletingLastPathComponent
-            if parent == candidate { break }
-            candidate = parent
-        }
+    // /Applications contains a symlink to that bundle, so resolve it before walking upward.
+    var candidate = Bundle.main.bundleURL
+        .resolvingSymlinksInPath()
+        .deletingLastPathComponent()
+        .path
+    for _ in 0..<6 {
+        if valid(candidate) { return candidate }
+        let parent = (candidate as NSString).deletingLastPathComponent
+        if parent == candidate { break }
+        candidate = parent
     }
     return nil
+}
+
+/// The installer keeps its managed Node.js copy beside the desktop source so
+/// Finder and Dock launches work without inheriting a shell-managed PATH.
+func detectDesktopNode(in repoRoot: String?) -> NodeRuntime? {
+    guard let repoRoot else { return nil }
+    let executable = (repoRoot as NSString)
+        .appendingPathComponent("apps/desktop/.runtime/node/bin/node")
+    guard FileManager.default.isExecutableFile(atPath: executable),
+          let result = runCaptured(executable, arguments: ["-v"]),
+          result.status == 0 else { return nil }
+    return NodeRuntime(executablePath: executable, version: result.text)
 }
 
 // MARK: - Title bar theme bridge
@@ -315,7 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
 
     private func boot() {
         repoRoot = resolveRepositoryRoot()
-        node = detectNode()
+        node = detectDesktopNode(in: repoRoot) ?? detectNode()
         guard let node else {
             promptInstallNode(message: "No Node.js runtime found on this machine.")
             return
@@ -335,17 +349,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         alert.informativeText = """
         \(message)
 
-        The desktop shell does not bundle a Node runtime. Install Node.js 22.19+ or 24+ \
-        (https://nodejs.org, or `brew install node`), then retry.
+        The installer-managed runtime could not be found. Run \
+        `bash apps/desktop/install.sh` from the DeepSeek Harness Desktop checkout, then retry.
         """
         alert.addButton(withTitle: "Retry Detection")
-        alert.addButton(withTitle: "Open nodejs.org")
+        alert.addButton(withTitle: "Open installation guide")
         alert.addButton(withTitle: "Quit")
         switch alert.runModal() {
         case .alertFirstButtonReturn:
             boot()
         case .alertSecondButtonReturn:
-            NSWorkspace.shared.open(URL(string: "https://nodejs.org/")!)
+            NSWorkspace.shared.open(URL(string: "https://github.com/lucaslus/deepseek-harness-desktop#install-on-macos")!)
             promptInstallNode(message: message)
         default:
             NSApp.terminate(nil)
