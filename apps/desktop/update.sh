@@ -12,6 +12,7 @@ readonly update_branch="master"
 readonly required_node_version="24.15.0"
 readonly required_pnpm_version="11.7.0"
 source "$repo_root/apps/desktop/terminal-ui.sh"
+source "$repo_root/apps/desktop/application.sh"
 dsh_prepare_log update
 if [[ ! -f "$repo_root/.git/config" ]]; then
   echo "The desktop updater requires a Git checkout." >&2
@@ -53,4 +54,13 @@ dsh_run_step "正在同步最新源码" git -C "$repo_root" pull --ff-only origi
 dsh_run_step "正在安装项目依赖" "$corepack_path" pnpm --dir "$repo_root" install --frozen-lockfile
 dsh_run_step "正在重新构建 DeepSeek Harness" "$corepack_path" pnpm --dir "$repo_root" run build
 dsh_run_step "正在重新构建 macOS 应用" bash "$repo_root/apps/desktop/build.sh"
-dsh_run_step "正在重新打开应用" open "$repo_root/apps/desktop/build/DSH.app"
+
+app_to_open="$repo_root/apps/desktop/build/DSH.app"
+if dsh_application_exists; then
+  if dsh_install_application "$app_to_open"; then
+    app_to_open="$dsh_application_path"
+  else
+    echo "The app was updated in the source checkout, but /Applications was not changed." >&2
+  fi
+fi
+dsh_run_step "正在重新打开应用" open "$app_to_open"

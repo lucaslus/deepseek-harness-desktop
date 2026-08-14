@@ -4,9 +4,9 @@ set -euo pipefail
 
 readonly required_node_version="24.15.0"
 readonly required_pnpm_version="11.7.0"
-readonly applications_app_path="/Applications/DeepSeek Harness.app"
 
 source "$(dirname "$0")/terminal-ui.sh"
+source "$(dirname "$0")/application.sh"
 
 if [[ $# -gt 1 ]] || { [[ $# -eq 1 ]] && [[ "$1" != "--runtime-only" ]]; }; then
   echo "Usage: $0 [--runtime-only]" >&2
@@ -128,32 +128,19 @@ dsh_run_step "正在构建 macOS 应用" bash apps/desktop/build.sh
 readonly built_app_path="$PWD/apps/desktop/build/DSH.app"
 
 add_to_applications() {
-  if [[ -L "$applications_app_path" ]]; then
-    local link_target
-    link_target=$(readlink "$applications_app_path")
-    if [[ "$link_target" == "$built_app_path" ]]; then
-      echo "Already available in Applications: $applications_app_path"
-      return
-    fi
-    echo "Not replacing the existing Applications link: $applications_app_path" >&2
-    return
-  fi
-  if [[ -e "$applications_app_path" ]]; then
-    echo "Not replacing the existing app: $applications_app_path" >&2
-    return
-  fi
-  if ln -s "$built_app_path" "$applications_app_path"; then
-    echo "Added to Applications: $applications_app_path"
-  else
-    echo "Could not add the app to /Applications. The in-tree app is still available at $built_app_path." >&2
-  fi
+  dsh_install_application "$built_app_path"
 }
 
+app_to_open="$built_app_path"
 if [[ -r /dev/tty ]]; then
   read -r -p "Add DeepSeek Harness to /Applications? [y/N] " reply </dev/tty
   case "$reply" in
-    [yY] | [yY][eE][sS]) add_to_applications ;;
+    [yY] | [yY][eE][sS])
+      if add_to_applications; then
+        app_to_open="$dsh_application_path"
+      fi
+      ;;
   esac
 fi
 
-dsh_run_step "正在打开应用" open "$built_app_path"
+dsh_run_step "正在打开应用" open "$app_to_open"

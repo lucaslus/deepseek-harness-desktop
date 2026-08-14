@@ -12,7 +12,7 @@ Run:
 curl -fsSL https://raw.githubusercontent.com/lucaslus/deepseek-harness-desktop/master/apps/desktop/bootstrap.sh | bash
 ```
 
-The command shallow-clones the current `master` source into `~/.dsh-desktop`, reuses an existing Node.js 24.15.0 runtime when available, otherwise downloads a verified copy into that checkout, uses Corepack to select pnpm 11.7.0, builds the app, and opens it. The terminal shows concise animated stages; command output is saved to `~/Library/Logs/DeepSeek Harness Desktop/` and its path is shown if a stage fails. The installer asks whether to add **DeepSeek Harness** to `/Applications`; choosing `y` adds a symlink rather than a duplicate copy, so Finder, Spotlight, and the Dock can open the current in-tree app.
+The command shallow-clones the current `master` source into `~/.dsh-desktop`, reuses an existing Node.js 24.15.0 runtime when available, otherwise downloads a verified copy into that checkout, uses Corepack to select pnpm 11.7.0, builds the app, and opens it. The terminal shows concise animated stages; command output is saved to `~/Library/Logs/DeepSeek Harness Desktop/` and its path is shown if a stage fails. The installer asks whether to add **DeepSeek Harness** to `/Applications`; choosing `y` copies the small native shell there, registers it with macOS, and refreshes that copy after every app update. Finder, Spotlight, and the Dock can then find the app while its source and Node runtime stay in the checkout.
 
 Node.js is not embedded in the app or published as a large Release, and no global Node or pnpm installation is required. On a Mac without Git or the Swift compiler, macOS displays its one-time Command Line Tools confirmation; complete it and rerun the command.
 

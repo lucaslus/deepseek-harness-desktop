@@ -24,7 +24,7 @@ cd deepseek-harness-desktop
 bash apps/desktop/install.sh
 ```
 
-The bootstrap baseline is **Node.js 24.15.0** and **pnpm 11.7.0**. `install.sh` reuses an exact existing Node runtime when it includes Corepack; otherwise it verifies the official Node.js checksum and downloads a managed runtime into `apps/desktop/.runtime`. Its terminal UI reports only animated high-level stages; each command's full output is written to `~/Library/Logs/DeepSeek Harness Desktop/` and is surfaced on failure. It uses Corepack to run the pinned pnpm release before installing, building, and opening the app. It also asks whether to add a `/Applications/DeepSeek Harness.app` symlink to the in-tree bundle. This makes the app discoverable through Finder, Spotlight, and the Dock without copying it away from the source checkout, so updates still work. The bundle is ad-hoc signed and includes `Resources/icon.icns`; no release runtime or Node bundle is published. The host listens on loopback only.
+The bootstrap baseline is **Node.js 24.15.0** and **pnpm 11.7.0**. `install.sh` reuses an exact existing Node runtime when it includes Corepack; otherwise it verifies the official Node.js checksum and downloads a managed runtime into `apps/desktop/.runtime`. Its terminal UI reports only animated high-level stages; each command's full output is written to `~/Library/Logs/DeepSeek Harness Desktop/` and is surfaced on failure. It uses Corepack to run the pinned pnpm release before installing, building, and opening the app. It also asks whether to add a Finder-visible `/Applications/DeepSeek Harness.app` copy. The copy contains only the small native shell and records its source checkout; each app update rebuilds and refreshes it. The bundle is ad-hoc signed and includes `Resources/icon.icns`; no release runtime or Node bundle is published. The host listens on loopback only.
 
 ## Known MVP limits
 
@@ -57,7 +57,7 @@ cd deepseek-harness-desktop
 bash apps/desktop/install.sh
 ```
 
-安装器使用的基线是 **Node.js 24.15.0** 与 **pnpm 11.7.0**。若现有的精确 Node runtime 包含 Corepack，`install.sh` 会直接复用它；否则会校验官方 Node.js checksum，再将受管理的 runtime 下载到 `apps/desktop/.runtime`。终端仅展示带动画的高层阶段；每条命令的完整输出都会写到 `~/Library/Logs/DeepSeek Harness Desktop/`，失败时会提示日志路径。之后通过 Corepack 使用锁定版本的 pnpm，完成依赖安装、构建和应用启动。它还会询问是否在 `/Applications/DeepSeek Harness.app` 创建指向仓库内 bundle 的符号链接。这样可通过 Finder、Spotlight 和 Dock 找回应用，又不把它复制出源码 checkout，更新功能仍然可用。应用为 ad-hoc 签名并包含 `Resources/icon.icns`，不发布内置 runtime 或 Node 的二进制包。宿主仅监听 loopback。
+安装器使用的基线是 **Node.js 24.15.0** 与 **pnpm 11.7.0**。若现有的精确 Node runtime 包含 Corepack，`install.sh` 会直接复用它；否则会校验官方 Node.js checksum，再将受管理的 runtime 下载到 `apps/desktop/.runtime`。终端仅展示带动画的高层阶段；每条命令的完整输出都会写到 `~/Library/Logs/DeepSeek Harness Desktop/`，失败时会提示日志路径。之后通过 Corepack 使用锁定版本的 pnpm，完成依赖安装、构建和应用启动。它还会询问是否在 `/Applications/DeepSeek Harness.app` 创建可被 Finder 识别的副本。这个副本只含很小的原生壳，并记录其源码 checkout；每次应用更新都会重新构建并刷新它。应用为 ad-hoc 签名并包含 `Resources/icon.icns`，不发布内置 runtime 或 Node 的二进制包。宿主仅监听 loopback。
 
 ## 已知 MVP 限制
 

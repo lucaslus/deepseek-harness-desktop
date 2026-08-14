@@ -110,8 +110,11 @@ func resolveRepositoryRoot() -> String? {
     if let override = ProcessInfo.processInfo.environment["DSH_REPO"], valid(override) {
         return override
     }
+    if let bundledRoot = Bundle.main.object(forInfoDictionaryKey: "DSHRepositoryRoot") as? String,
+       valid(bundledRoot) {
+        return bundledRoot
+    }
     // The bundle lives at <repo>/apps/desktop/build/DSH.app when built in-tree.
-    // /Applications contains a symlink to that bundle, so resolve it before walking upward.
     var candidate = Bundle.main.bundleURL
         .resolvingSymlinksInPath()
         .deletingLastPathComponent()

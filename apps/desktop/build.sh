@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 
 APP="build/DSH.app"
 ICON="Resources/icon.icns"
+REPOSITORY_ROOT="$(cd ../.. && pwd -P)"
 if [[ ! -f "$ICON" ]]; then
   echo "missing desktop icon: $ICON" >&2
   exit 1
@@ -19,15 +20,17 @@ swiftc -O -swift-version 5 \
 
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
 
-cat > "$APP/Contents/Info.plist" <<'PLIST'
+cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
-	<key>CFBundleDisplayName</key>
+<key>CFBundleDisplayName</key>
 	<string>DeepSeek Harness</string>
+	<key>DSHRepositoryRoot</key>
+	<string>$REPOSITORY_ROOT</string>
 	<key>CFBundleExecutable</key>
 	<string>dsh-desktop</string>
 	<key>CFBundleIdentifier</key>
