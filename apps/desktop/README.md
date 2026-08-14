@@ -10,26 +10,26 @@ The shell deliberately bundles **no Node runtime**: it locates the user's Node (
 
 1. Resolves the repository root (`DSH_REPO` env override, else the in-tree bundle location).
 2. Detects Node through the env PATH, the user's login-shell PATH (covers Homebrew/nvm), and common prefixes; rejects unsatisfied versions with an install prompt.
-3. Spawns `node apps/cli/lib/bin.js web --port 0` (or `pnpm dsh web --port 0` before a build), with the repository root as the workspace default.
+3. Spawns the built in-tree host, or a user-installed `dsh` command when no checkout is available.
 4. Waits for the `dsh web: http://127.0.0.1:<port>` readiness line, which prints only after the full plugin tree settles, then loads the URL in the `WKWebView`.
 5. Mirrors the Web theme into the native chrome (`ThemeBridge`): a transparent title bar painted with the sidebar fill token and a window appearance that follows the resolved light/dark theme, so the left edge reads as one continuous surface.
 6. Places a native interaction strip across the transparent title bar for window dragging and the system-configured double-click action (zoom by default).
-7. On quit, sends `SIGTERM` to the host (its graceful five-second drain), escalating to `SIGKILL`.
+7. Lets a source checkout update itself through **Update and Restart…**: `git pull --ff-only`, dependency install, Web build, app rebuild, and relaunch.
 
 ## Build and run
 
 ```sh
-pnpm run build        # once, at the repository root: host libs + frontend dist
-bash apps/desktop/build.sh
-open apps/desktop/build/DSH.app
+git clone https://github.com/lucaslus/deepseek-harness-desktop.git
+cd deepseek-harness-desktop
+bash apps/desktop/install.sh
 ```
 
-The bundle is ad-hoc signed and includes `Resources/icon.icns`; the source artwork is the Web favicon. The host listens on loopback only.
+The supported bootstrap baseline is **Node.js 24.15.0** and **pnpm 11.7.0**. `install.sh` uses Corepack to run the pinned pnpm release, then installs, builds, and opens the app. The bundle is ad-hoc signed and includes `Resources/icon.icns`; no release runtime or Node bundle is published. The host listens on loopback only.
 
 ## Known MVP limits
 
 - Web content extends beneath the transparent, theme-following title bar; the native title-bar region owns window dragging and double-clicks, and there is no vibrancy yet.
-- No app icon; generic Dock tile.
+- Updating requires a clean Git checkout with a reachable `origin`; conflicts or uncommitted changes are surfaced instead of overwritten.
 - Host crash shows a retry surface but no automatic restart.
 - macOS only; Windows/Linux shells are separate work.
 
@@ -43,25 +43,25 @@ The bundle is ad-hoc signed and includes `Resources/icon.icns`; the source artwo
 
 1. 定位仓库根（`DSH_REPO` 环境变量优先，否则按 in-tree 构建位置推导）。
 2. 依次从 env PATH、登录 shell 的 PATH（覆盖 Homebrew/nvm）和常见前缀找 Node；版本不符弹窗提示安装。
-3. 拉起 `node apps/cli/lib/bin.js web --port 0`（未构建时回退 `pnpm dsh web --port 0`），工作区默认为仓库根。
+3. 优先拉起仓库内已构建的宿主；找不到仓库时使用用户已安装的 `dsh` 命令。
 4. 等待 `dsh web: http://127.0.0.1:<port>` 就绪行（该行只在整棵插件树挂载完成后打印），然后在 `WKWebView` 中加载。
 5. 将 Web 主题同步到原生窗口：透明标题栏使用侧边栏填充色，窗口外观跟随当前深浅主题。
 6. 在透明标题栏上覆盖原生交互条，用于拖动窗口并执行系统配置的双击动作（默认缩放）。
-7. 退出时向宿主发 `SIGTERM`（其五秒优雅排水），超时升级为 `SIGKILL`。
+7. 源码仓库可通过 **Update and Restart…** 自更新：`git pull --ff-only`、安装依赖、构建 Web、重打包应用并重启。
 
 ## 构建运行
 
 ```sh
-pnpm run build        # 仓库根执行一次：宿主 lib + 前端 dist
-bash apps/desktop/build.sh
-open apps/desktop/build/DSH.app
+git clone https://github.com/lucaslus/deepseek-harness-desktop.git
+cd deepseek-harness-desktop
+bash apps/desktop/install.sh
 ```
 
-应用为 ad-hoc 签名，并包含 `Resources/icon.icns`；图标源为 Web favicon。宿主仅监听 loopback。
+受支持的安装基线是 **Node.js 24.15.0** 与 **pnpm 11.7.0**。`install.sh` 通过 Corepack 使用锁定版本的 pnpm，并完成依赖安装、构建和应用启动。应用为 ad-hoc 签名并包含 `Resources/icon.icns`，不发布内置 runtime 或 Node 的二进制包。宿主仅监听 loopback。
 
 ## 已知 MVP 限制
 
 - Web 内容延伸到透明且跟随主题的标题栏下方；原生标题栏区域负责窗口拖动和双击，尚无 vibrancy。
-- 无应用图标，Dock 显示通用图标。
+- 更新需要干净、可访问 `origin` 的 Git 仓库；遇到冲突或未提交改动会提示失败，不会覆盖本地代码。
 - 宿主崩溃只显示重试界面，不自动重启。
 - 仅 macOS；Windows/Linux 壳是另外的工程。

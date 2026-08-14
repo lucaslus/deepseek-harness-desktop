@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the DSH desktop shell MVP into build/DSH.app.
+# Build the DSH desktop shell into build/DSH.app.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -9,6 +9,7 @@ if [[ ! -f "$ICON" ]]; then
   echo "missing desktop icon: $ICON" >&2
   exit 1
 fi
+
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
@@ -40,7 +41,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.0.1</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>NSHighResolutionCapable</key>

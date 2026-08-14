@@ -1,0 +1,57 @@
+name: Desktop macOS
+
+on:
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/client/ui-sidebar/**'
+      - '.github/workflows/desktop-macos.yml'
+      - 'pnpm-lock.yaml'
+  push:
+    branches: [master]
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/client/ui-sidebar/**'
+      - '.github/workflows/desktop-macos.yml'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build desktop shell
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web runtime
+        run: pnpm run build
+
+      - name: Build and verify app bundle
+        run: |
+          bash apps/desktop/build.sh
+          codesign --verify --deep --strict --verbose=2 apps/desktop/build/DSH.app
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' apps/desktop/build/DSH.app/Contents/Info.plist
+
+      - name: Upload desktop app for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: DSH-macos-arm64
+          path: apps/desktop/build/DSH.app

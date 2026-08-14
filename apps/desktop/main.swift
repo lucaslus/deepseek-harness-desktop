@@ -94,7 +94,8 @@ func nodeVersionSatisfies(_ raw: String) -> Bool {
 }
 
 func detectNode() -> NodeRuntime? {
-    guard let executable = findExecutable("node") else { return nil }
+    let executable = findExecutable("node")
+    guard let executable else { return nil }
     guard let result = runCaptured(executable, arguments: ["-v"]), result.status == 0 else { return nil }
     return NodeRuntime(executablePath: executable, version: result.text)
 }
@@ -289,6 +290,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     private var stderrTail = Data()
     private var hostReady = false
     private var hostURL: URL?
+    private var updateProcess: Process?
+    private var updateOutput = Data()
 
     private let urlPattern = try! NSRegularExpression(pattern: #"dsh web: (http://127\.0\.0\.1:\d+)"#)
 
@@ -306,26 +309,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         teardownHost()
+        updateProcess?.terminate()
         return .terminateNow
     }
 
     private func boot() {
         repoRoot = resolveRepositoryRoot()
-        guard let repoRoot else {
-            showFatal(
-                "Cannot locate the deepseek-harness repository.",
-                detail: "Set DSH_REPO to the repository root and relaunch.",
-            )
-            return
-        }
         node = detectNode()
         guard let node else {
-            promptInstallNode(in: repoRoot, message: "No Node.js runtime found on this machine.")
+            promptInstallNode(message: "No Node.js runtime found on this machine.")
             return
         }
         guard nodeVersionSatisfies(node.version) else {
             promptInstallNode(
-                in: repoRoot,
                 message: "Node.js \(node.version) does not satisfy the required range (^22.19.0 || >=24.0.0).",
             )
             return
@@ -333,7 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         startHost(repoRoot: repoRoot, node: node)
     }
 
-    private func promptInstallNode(in repoRoot: String, message: String) {
+    private func promptInstallNode(message: String) {
         let alert = NSAlert()
         alert.messageText = "Node.js is required"
         alert.informativeText = """
@@ -350,7 +346,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
             boot()
         case .alertSecondButtonReturn:
             NSWorkspace.shared.open(URL(string: "https://nodejs.org/")!)
-            promptInstallNode(in: repoRoot, message: message)
+            promptInstallNode(message: message)
         default:
             NSApp.terminate(nil)
         }
@@ -358,25 +354,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
 
     // MARK: Host lifecycle
 
-    private func startHost(repoRoot: String, node: NodeRuntime) {
+    private func startHost(repoRoot: String?, node: NodeRuntime) {
         hostReady = false
         lineBuffer = Data()
         stderrTail = Data()
         showOverlay("Starting \(appDisplayName)…", spinning: true, showRetry: false)
 
-        let builtBin = (repoRoot as NSString).appendingPathComponent("apps/cli/lib/bin.js")
+        let builtBin = repoRoot.map {
+            ($0 as NSString).appendingPathComponent("apps/cli/lib/bin.js")
+        }
         let process = Process()
-        process.currentDirectoryURL = URL(fileURLWithPath: repoRoot)
-        if FileManager.default.fileExists(atPath: builtBin) {
+        if let repoRoot, let builtBin,
+           FileManager.default.fileExists(atPath: builtBin) {
+            process.currentDirectoryURL = URL(fileURLWithPath: repoRoot)
             process.executableURL = URL(fileURLWithPath: node.executablePath)
             process.arguments = [builtBin, "web", "--port", "0"]
-        } else if let pnpm = findExecutable("pnpm") {
-            process.executableURL = URL(fileURLWithPath: pnpm)
-            process.arguments = ["dsh", "web", "--port", "0"]
+        } else if let dsh = findExecutable("dsh") {
+            process.currentDirectoryURL = FileManager.default.homeDirectoryForCurrentUser
+            process.executableURL = URL(fileURLWithPath: dsh)
+            process.arguments = ["web", "--port", "0"]
         } else {
             showFatal(
-                "Host artifacts are not built.",
-                detail: "Run `pnpm install && pnpm run build` in the repository, then relaunch.",
+                "DeepSeek Harness is not installed.",
+                detail: "Install the dsh CLI, or set DSH_REPO to a built deepseek-harness checkout, then relaunch.",
             )
             return
         }
@@ -479,6 +479,67 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         }
         if process.isRunning { kill(process.processIdentifier, SIGKILL) }
         host = nil
+    }
+
+    @objc private func updateAndRestart() {
+        guard let repoRoot else {
+            showFatal(
+                "Updates require a local Git checkout.",
+                detail: "Clone deepseek-harness-desktop and launch its in-tree app, then try again.",
+            )
+            return
+        }
+        let alert = NSAlert()
+        alert.messageText = "Update DeepSeek Harness?"
+        alert.informativeText = "The app will pull the latest code, install dependencies, rebuild, and restart."
+        alert.addButton(withTitle: "Update and Restart")
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        teardownHost()
+        updateOutput = Data()
+        showOverlay("Updating DeepSeek Harness…", spinning: true, showRetry: false)
+        let process = Process()
+        process.currentDirectoryURL = URL(fileURLWithPath: repoRoot)
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = ["apps/desktop/update.sh", repoRoot]
+        let output = Pipe()
+        process.standardOutput = output
+        process.standardError = output
+        output.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else { return }
+            DispatchQueue.main.async { self?.appendUpdateOutput(chunk) }
+        }
+        process.terminationHandler = { [weak self] finished in
+            DispatchQueue.main.async { self?.finishUpdate(finished) }
+        }
+        do {
+            updateProcess = process
+            try process.run()
+        } catch {
+            updateProcess = nil
+            showFatal("Failed to start the updater.", detail: error.localizedDescription)
+        }
+    }
+
+    private func appendUpdateOutput(_ chunk: Data) {
+        updateOutput.append(chunk)
+        if updateOutput.count > 8_192 {
+            updateOutput = updateOutput.suffix(8_192)
+        }
+    }
+
+    private func finishUpdate(_ process: Process) {
+        guard process === updateProcess else { return }
+        updateProcess = nil
+        if process.terminationStatus == 0 {
+            NSApp.terminate(nil)
+            return
+        }
+        let detail = String(data: updateOutput, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        showOverlay("The update failed (code \(process.terminationStatus)).", spinning: false, showRetry: true, detail: detail)
     }
 
     @objc private func restartHost() {
@@ -630,6 +691,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         appMenu.addItem(withTitle: "About \(appDisplayName)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Reload", action: #selector(reloadPage), keyEquivalent: "r")
+        appMenu.addItem(withTitle: "Update and Restart…", action: #selector(updateAndRestart), keyEquivalent: "")
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
