@@ -93,9 +93,9 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  height: 60px;
-  padding: 8px 0 8px 4px;
-  margin-bottom: 8px;
+  height: var(--dsh-sidebar-logo-row-height, 60px);
+  padding: var(--dsh-sidebar-logo-row-block-padding, 8px) 0 var(--dsh-sidebar-logo-row-block-padding, 8px) 4px;
+  margin-bottom: var(--dsh-sidebar-logo-row-margin-bottom, 8px);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -105,6 +105,15 @@
   padding: 0;
   margin-bottom: 12px;
   justify-content: flex-start;
+}
+
+.logoRow > .brand,
+.logoRow > .toggle {
+  transform: translateY(var(--dsh-sidebar-logo-row-content-offset, 0px));
+}
+
+.collapsed .logoRow > .toggle {
+  transform: none;
 }
 
 /* Brand group (figma I133:7632): the full wordmark rides the text ink

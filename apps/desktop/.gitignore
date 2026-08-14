@@ -1,0 +1,14 @@
+build/
+.build/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+
+# `icon.icns` is the bundle resource. The other files are reproducible
+# generator outputs from apps/web/public/favicon.svg.
+Resources/app-icon-source.png
+Resources/icon.png
+Resources/32x32.png
+Resources/64x64.png
+Resources/128x128.png
+Resources/128x128@2x.png

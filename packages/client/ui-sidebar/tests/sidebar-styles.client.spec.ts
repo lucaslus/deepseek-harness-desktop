@@ -40,6 +40,23 @@ describe('SidebarRoot.module.css', () => {
     expect(declarations('.collapsed .regionArea')?.get('margin-right')).toBe('0')
   })
 
+  it('keeps the expanded wordmark row configurable without affecting the rail', () => {
+    const logoRow = declarations('.logoRow')
+    expect(logoRow?.get('height')).toBe('var(--dsh-sidebar-logo-row-height, 60px)')
+    expect(logoRow?.get('padding')).toBe(
+      'var(--dsh-sidebar-logo-row-block-padding, 8px) 0 var(--dsh-sidebar-logo-row-block-padding, 8px) 4px',
+    )
+    expect(logoRow?.get('margin-bottom')).toBe('var(--dsh-sidebar-logo-row-margin-bottom, 8px)')
+    expect(declarations('.logoRow > .brand')?.get('transform')).toBe(
+      'translateY(var(--dsh-sidebar-logo-row-content-offset, 0px))',
+    )
+    expect(declarations('.logoRow > .toggle')?.get('transform')).toBe(
+      'translateY(var(--dsh-sidebar-logo-row-content-offset, 0px))',
+    )
+    expect(declarations('.collapsed .logoRow > .toggle')?.get('transform')).toBe('none')
+    expect(declarations('.collapsed .logoRow')?.get('padding')).toBe('0')
+  })
+
   it('moves the four upper controls while the settings seat only fades', () => {
     const animation = 'rail-in 150ms var(--ds-ease-in-out) backwards'
     for (const selector of [
