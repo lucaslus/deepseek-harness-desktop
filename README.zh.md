@@ -12,7 +12,7 @@ DeepSeek Harness Desktop 是 [DeepSeek Harness](https://github.com/deepseek-ai/d
 curl -fsSL https://raw.githubusercontent.com/lucaslus/deepseek-harness-desktop/master/apps/desktop/bootstrap.sh | bash
 ```
 
-该命令会把 `master` 当前源码以 shallow clone 方式放到 `~/.dsh-desktop`；若本机已有 Node.js 24.15.0 则直接复用，否则才将已校验的副本下载到该 checkout 内。随后通过 Corepack 选择 pnpm 11.7.0，构建并打开应用。安装器会询问是否将 **DeepSeek Harness** 加入 `/Applications`；选择 `y` 会创建符号链接而非复制一份 App，因此 Finder、Spotlight 和 Dock 始终打开仓库内当前构建的应用。
+该命令会把 `master` 当前源码以 shallow clone 方式放到 `~/.dsh-desktop`；若本机已有 Node.js 24.15.0 则直接复用，否则才将已校验的副本下载到该 checkout 内。随后通过 Corepack 选择 pnpm 11.7.0，构建并打开应用。终端只会显示简洁的阶段与加载动画，命令详细输出会写入 `~/Library/Logs/DeepSeek Harness Desktop/`；某个阶段失败时会提示对应日志路径。安装器会询问是否将 **DeepSeek Harness** 加入 `/Applications`；选择 `y` 会创建符号链接而非复制一份 App，因此 Finder、Spotlight 和 Dock 始终打开仓库内当前构建的应用。
 
 Node.js 不会被嵌入 App，也不会发布大型 Release；用户无需全局安装 Node 或 pnpm。如果 Mac 缺少 Git 或 Swift 编译器，macOS 会显示一次性的 Command Line Tools 确认窗口；完成后重新运行该命令即可。
 

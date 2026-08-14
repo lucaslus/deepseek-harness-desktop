@@ -6,6 +6,8 @@ readonly required_node_version="24.15.0"
 readonly required_pnpm_version="11.7.0"
 readonly applications_app_path="/Applications/DeepSeek Harness.app"
 
+source "$(dirname "$0")/terminal-ui.sh"
+
 if [[ $# -gt 1 ]] || { [[ $# -eq 1 ]] && [[ "$1" != "--runtime-only" ]]; }; then
   echo "Usage: $0 [--runtime-only]" >&2
   exit 64
@@ -18,6 +20,8 @@ readonly runtime_directory="$desktop_directory/.runtime"
 readonly node_root="$runtime_directory/node"
 readonly node_path="$node_root/bin/node"
 readonly corepack_path="$node_root/bin/corepack"
+
+dsh_prepare_log install
 
 ensure_command_line_tools() {
   if command -v swiftc >/dev/null 2>&1; then
@@ -66,9 +70,12 @@ ensure_local_node() {
   checksums_url="https://nodejs.org/dist/v$required_node_version/SHASUMS256.txt"
   temporary_directory=$(mktemp -d "${TMPDIR:-/tmp}/dsh-node.XXXXXX")
 
-  echo "Downloading Node.js $required_node_version for macOS…"
-  if ! curl --fail --location --retry 3 --output "$temporary_directory/$archive_name" "$distribution_url" \
-    || ! curl --fail --location --retry 3 --output "$temporary_directory/SHASUMS256.txt" "$checksums_url"; then
+  download_node_archive() {
+    curl --fail --location --retry 3 --output "$temporary_directory/$archive_name" "$distribution_url"
+    curl --fail --location --retry 3 --output "$temporary_directory/SHASUMS256.txt" "$checksums_url"
+  }
+
+  if ! dsh_run_step "正在准备 Node.js $required_node_version" download_node_archive; then
     rm -rf "$temporary_directory"
     echo "Could not download Node.js $required_node_version from nodejs.org." >&2
     exit 69
@@ -80,7 +87,7 @@ ensure_local_node() {
     echo "The Node.js download did not match nodejs.org's published checksum." >&2
     exit 65
   fi
-  if ! tar -xzf "$temporary_directory/$archive_name" -C "$temporary_directory" \
+  if ! dsh_run_step "正在解压 Node.js" tar -xzf "$temporary_directory/$archive_name" -C "$temporary_directory" \
     || [[ ! -x "$temporary_directory/$archive_stem/bin/node" ]]; then
     rm -rf "$temporary_directory"
     echo "The Node.js archive could not be unpacked." >&2
@@ -104,15 +111,19 @@ fi
 export PATH="$node_root/bin:$PATH"
 export COREPACK_HOME="$runtime_directory/corepack"
 
-"$corepack_path" install
-"$corepack_path" pnpm --version | grep -qx "$required_pnpm_version"
+printf '\n正在安装 DeepSeek Harness Desktop\n\n'
+dsh_run_step "正在准备 pnpm $required_pnpm_version" "$corepack_path" install
+if [[ "$("$corepack_path" pnpm --version)" != "$required_pnpm_version" ]]; then
+  echo "The managed Corepack did not provide pnpm $required_pnpm_version." >&2
+  exit 65
+fi
 if [[ "${1:-}" == "--runtime-only" ]]; then
   exit 0
 fi
 
-"$corepack_path" pnpm install --frozen-lockfile
-"$corepack_path" pnpm run build
-bash apps/desktop/build.sh
+dsh_run_step "正在安装项目依赖（首次可能需要数分钟）" "$corepack_path" pnpm install --frozen-lockfile
+dsh_run_step "正在构建 DeepSeek Harness" "$corepack_path" pnpm run build
+dsh_run_step "正在构建 macOS 应用" bash apps/desktop/build.sh
 
 readonly built_app_path="$PWD/apps/desktop/build/DSH.app"
 
@@ -145,4 +156,4 @@ if [[ -r /dev/tty ]]; then
   esac
 fi
 
-open "$built_app_path"
+dsh_run_step "正在打开应用" open "$built_app_path"

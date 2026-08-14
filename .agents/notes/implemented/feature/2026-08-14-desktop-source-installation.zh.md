@@ -10,7 +10,7 @@ Status: implemented
 
 ## 决策
 
-桌面应用以源码形式分发。`apps/desktop/bootstrap.sh` 会把 `master` 当前源码以 shallow clone 方式放到固定的标准目录 `~/.dsh-desktop`，然后调用 `apps/desktop/install.sh`。若本机已有包含 Corepack 的 Node.js 24.15.0，安装器会直接复用；否则会校验并下载到 `apps/desktop/.runtime/node`。随后通过 Corepack 启用 pnpm 11.7.0，安装锁定的 workspace 依赖、构建仓库、构建 `DSH.app` 并打开它。它会以交互方式询问是否在 `/Applications/DeepSeek Harness.app` 创建指向仓库内 bundle 的符号链接。Node.js 保留在用户机器上，不复制进 app bundle。
+桌面应用以源码形式分发。`apps/desktop/bootstrap.sh` 会把 `master` 当前源码以 shallow clone 方式放到固定的标准目录 `~/.dsh-desktop`，然后调用 `apps/desktop/install.sh`。若本机已有包含 Corepack 的 Node.js 24.15.0，安装器会直接复用；否则会校验并下载到 `apps/desktop/.runtime/node`。终端会展示带动画的高层阶段，命令输出记录在 `~/Library/Logs/DeepSeek Harness Desktop/`，仅在某阶段失败时显示。随后通过 Corepack 启用 pnpm 11.7.0，安装锁定的 workspace 依赖、构建仓库、构建 `DSH.app` 并打开它。它会以交互方式询问是否在 `/Applications/DeepSeek Harness.app` 创建指向仓库内 bundle 的符号链接。Node.js 保留在用户机器上，不复制进 app bundle。
 
 `DSH.app` 从自己的源码 checkout 启动 Web host。其“Update and Restart”命令运行 `apps/desktop/update.sh`：它要求 Git checkout 干净，从已配置的 remote 快进更新，重新构建 workspace 和 app 后打开新的 app。脱离 checkout 使用时，已本地安装的 `dsh` 命令仍可作为启动后备。
 

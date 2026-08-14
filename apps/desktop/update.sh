@@ -11,6 +11,8 @@ repo_root=$1
 readonly update_branch="master"
 readonly required_node_version="24.15.0"
 readonly required_pnpm_version="11.7.0"
+source "$repo_root/apps/desktop/terminal-ui.sh"
+dsh_prepare_log update
 if [[ ! -f "$repo_root/.git/config" ]]; then
   echo "The desktop updater requires a Git checkout." >&2
   exit 66
@@ -40,11 +42,15 @@ fi
 export PATH="$runtime_directory/node/bin:$PATH"
 export COREPACK_HOME="$runtime_directory/corepack"
 
-"$corepack_path" install
-"$corepack_path" pnpm --version | grep -qx "$required_pnpm_version"
+dsh_run_step "正在准备 pnpm $required_pnpm_version" "$corepack_path" install
+if [[ "$("$corepack_path" pnpm --version)" != "$required_pnpm_version" ]]; then
+  echo "The managed Corepack did not provide pnpm $required_pnpm_version." >&2
+  exit 65
+fi
 
-git -C "$repo_root" pull --ff-only origin "$update_branch"
-"$corepack_path" pnpm --dir "$repo_root" install --frozen-lockfile
-"$corepack_path" pnpm --dir "$repo_root" run build
-bash "$repo_root/apps/desktop/build.sh"
-open "$repo_root/apps/desktop/build/DSH.app"
+printf '\n正在更新 DeepSeek Harness Desktop\n\n'
+dsh_run_step "正在同步最新源码" git -C "$repo_root" pull --ff-only origin "$update_branch"
+dsh_run_step "正在安装项目依赖" "$corepack_path" pnpm --dir "$repo_root" install --frozen-lockfile
+dsh_run_step "正在重新构建 DeepSeek Harness" "$corepack_path" pnpm --dir "$repo_root" run build
+dsh_run_step "正在重新构建 macOS 应用" bash "$repo_root/apps/desktop/build.sh"
+dsh_run_step "正在重新打开应用" open "$repo_root/apps/desktop/build/DSH.app"
