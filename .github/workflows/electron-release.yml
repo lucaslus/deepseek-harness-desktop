@@ -1,0 +1,95 @@
+name: Electron macOS release
+
+on:
+  push:
+    tags:
+      - 'electron-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package macOS Universal
+    runs-on: macos-14
+    timeout-minutes: 45
+    env:
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Require release signing credentials
+        run: |
+          test -n "$CSC_LINK"
+          test -n "$CSC_KEY_PASSWORD"
+          test -n "$APPLE_ID"
+          test -n "$APPLE_APP_SPECIFIC_PASSWORD"
+          test -n "$APPLE_TEAM_ID"
+
+      - name: Verify tag version
+        run: |
+          test "${GITHUB_REF_NAME#electron-v}" = "$(node -p \"require('./apps/electron/app/package.json').version\")"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web runtime
+        run: pnpm run build
+
+      - name: Package, sign, and notarize
+        run: node apps/electron/scripts/package-mac.mjs universal
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-macos-universal
+          if-no-files-found: error
+          path: |
+            apps/electron/dist/release/*.dmg
+            apps/electron/dist/release/*.zip
+            apps/electron/dist/release/*.blockmap
+            apps/electron/dist/release/update-metadata-*.json
+
+  release:
+    name: Publish GitHub release
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download signed assets
+        uses: actions/download-artifact@v4
+        with:
+          pattern: electron-macos-*
+          path: apps/electron/dist/release
+          merge-multiple: true
+
+      - name: Write combined update metadata
+        run: node apps/electron/scripts/merge-update-metadata.mjs apps/electron/dist/release
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            apps/electron/dist/release/*.dmg
+            apps/electron/dist/release/*.zip
+            apps/electron/dist/release/*.blockmap
+            apps/electron/dist/release/latest-mac.yml

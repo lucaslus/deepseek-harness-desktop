@@ -7,6 +7,10 @@ packages:
   - native/landlock-run/packages/*
   # Product assemblies over the package tier; apps/cli owns the `dsh` bin.
   - apps/*
+  # The packaged Electron shell is intentionally a separate workspace from
+  # its staging manifest.  That keeps electron-builder from putting the full
+  # Harness dependency graph into each Universal-build temporary app.
+  - apps/electron/app
   - website
   # The runnable demo leaves join as ONE workspace member: examples/package.json
   # declares the union of every leaf's cordis.yml plugins as workspace:*, so a
@@ -19,6 +23,17 @@ packages:
   # Deploy root of the single-exe build: a pure dependency manifest whose
   # closure is what the exe bundles and what the Python runtime distributes.
   - python/sdk-runtime
+
+# The release app is a real macOS Universal binary.  Preserve optional native
+# modules for both macOS CPUs when dependencies are installed, so staging the
+# Harness runtime on one architecture does not produce a broken app on the
+# other one.
+supportedArchitectures:
+  os:
+    - darwin
+  cpu:
+    - x64
+    - arm64
 
 # Vendored framework packages keep their upstream semver ranges, while local
 # builds must resolve those matching names to this workspace's pinned sources.
@@ -48,6 +63,8 @@ allowBuilds:
   '@google/genai': false
   protobufjs: false
   node-addon-require-builtin: false
+  # Windows-only packaging is not part of this macOS Electron experiment.
+  electron-winstaller: false
   # JSONL durability calls MoveFileExW with write-through publication on Windows.
   koffi: true
   # The Python runtime deploy includes the reviewed workspace postinstall that

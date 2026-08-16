@@ -1,0 +1,27 @@
+{
+  "name": "deepseek-harness-desktop-electron",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "app/main.mjs",
+  "scripts": {
+    "stage-runtime": "node scripts/stage-runtime.mjs",
+    "package:mac": "node scripts/package-mac.mjs",
+    "package:mac:universal": "node scripts/package-mac.mjs universal",
+    "package:mac:arm64": "node scripts/package-mac.mjs arm64",
+    "package:mac:x64": "node scripts/package-mac.mjs x64"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh": "workspace:^",
+    "@deepseek-ai/dsh-atomic-write": "workspace:^",
+    "@deepseek-ai/dsh-session-telemetry": "workspace:^",
+    "@deepseek-ai/dsh-session-title-llm": "workspace:^",
+    "@deepseek-ai/dsh-spill": "workspace:^",
+    "dsh-jsonrpc-agent-pkg": "workspace:^"
+  },
+  "devDependencies": {
+    "electron": "43.4.0",
+    "@electron/notarize": "3.1.1",
+    "electron-builder": "26.15.3"
+  }
+}

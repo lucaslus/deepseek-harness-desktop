@@ -2,37 +2,29 @@
 
 English | [中文](README.zh.md)
 
-DeepSeek Harness Desktop is a macOS desktop shell for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It runs the upstream Web UI in a native AppKit window while keeping your source checkout and Node.js runtime on your own machine.
+DeepSeek Harness Desktop is a macOS desktop app for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It packages the upstream Web UI and its required Node runtime inside a signed Universal app, so end users can install it normally without cloning source code or configuring Node.js.
 
 ## Install on macOS
 
-Run:
+Download the latest **DMG** from [GitHub Releases](https://github.com/lucaslus/deepseek-harness-desktop/releases), open it, then drag **DeepSeek Harness** into **Applications**. The app supports both Apple Silicon and Intel Macs. Once installed, Spotlight, Finder, and the Dock can find it normally.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/lucaslus/deepseek-harness-desktop/master/apps/desktop/bootstrap.sh | bash
-```
+Use **Check for Updates…** in the app menu to look for a newer published release. The app only offers an update after a newer GitHub Release has been published with its signed ZIP and `latest-mac.yml` metadata.
 
-The command shallow-clones the current `master` source into `~/.dsh-desktop`, reuses an existing Node.js 24.15.0 runtime when available, otherwise downloads a verified copy into that checkout, uses Corepack to select pnpm 11.7.0, builds the app, and opens it. The terminal shows concise animated stages; command output is saved to `~/Library/Logs/DeepSeek Harness Desktop/` and its path is shown if a stage fails. The installer asks whether to add **DeepSeek Harness** to `/Applications`; choosing `y` copies the small native shell there, registers it with macOS, and refreshes that copy after every app update. Finder, Spotlight, and the Dock can then find the app while its source and Node runtime stay in the checkout.
+## Build a DMG yourself
 
-Node.js is not embedded in the app or published as a large Release, and no global Node or pnpm installation is required. On a Mac without Git or the Swift compiler, macOS displays its one-time Command Line Tools confirmation; complete it and rerun the command.
-
-## Update
-
-Choose **Update and Restart…** from the application menu. The app first runs `git pull --ff-only` against `origin/master`; only if that succeeds does it install the locked dependencies, rebuild itself, and restart. A manual update therefore rebuilds even when Git reports “Already up to date”, but it never applies a non-`master` branch or an unmerged upstream change.
-
-Updates refuse a checkout with uncommitted changes or a non-fast-forward Git history, so local work is not overwritten.
-
-## Install from a checkout
-
-If you want a different working directory:
+On macOS with Node.js 24+:
 
 ```sh
 git clone https://github.com/lucaslus/deepseek-harness-desktop.git
 cd deepseek-harness-desktop
-bash apps/desktop/install.sh
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run build
+node apps/electron/scripts/package-mac.mjs universal
+open "apps/electron/dist/release/DeepSeek Harness-0.0.1-universal.dmg"
 ```
 
-See [desktop implementation details](apps/desktop/README.md) for runtime behavior and known limits.
+The output folder also contains the ZIP used by automatic updates. A locally built application is unsigned; Gatekeeper warnings are expected unless you sign it with your own Apple Developer credentials.
 
 ## Upstream
 

@@ -1,0 +1,32 @@
+appId: com.deepseek-ai.dsh-desktop
+productName: DeepSeek Harness
+artifactName: ${productName}-${version}-${arch}.${ext}
+npmRebuild: false
+directories:
+  # Build from the small shell-only workspace.  The separate parent workspace
+  # is used solely to deploy Harness into Contents/Resources after Universal
+  # merging, so it is copied exactly once.
+  app: app
+  output: dist/release
+files:
+  - main.mjs
+  - package.json
+afterPack: scripts/copy-harness-runtime.mjs
+mac:
+  category: public.app-category.developer-tools
+  icon: ../desktop/Resources/icon.icns
+  hardenedRuntime: true
+  notarize: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  gatekeeperAssess: false
+  target:
+    - target: dmg
+    - target: zip
+dmg:
+  title: DeepSeek Harness
+publish:
+  - provider: github
+    owner: lucaslus
+    repo: deepseek-harness-desktop
+    releaseType: release
