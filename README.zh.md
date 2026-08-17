@@ -15,6 +15,16 @@ DeepSeek Harness Desktop 是 [DeepSeek Harness](https://github.com/deepseek-ai/d
 
 应用菜单中的 **Check for Updates…** 会打开 GitHub Releases；下载对应的新 DMG 并替换 Applications 中的应用即可更新。
 
+## 模型提供方品牌图标
+
+通过品牌图标可以更快辨认模型来自哪个提供方。DeepSeek Harness Desktop 会在设置页、聊天输入框的模型选择器和 `/model` 命令中展示同一套提供方图标，让同一模型路由在所有入口都有一致的视觉标识。
+
+![模型设置中的提供方品牌图标](docs/images/model-provider-brand-icons.png)
+
+自定义 Provider 不必再使用通用网关图标。在 **自定义设置** 中可选择内置品牌，例如 Kimi / Moonshot AI、Qwen、MiniMax、OpenAI、Anthropic 等。选择会与 Provider 配置一同保存，并在所有模型选择入口生效。图标目录随应用内置、离线可用，且不会加载任意远程图片 URL。
+
+![自定义 Provider 品牌图标选择器](docs/images/custom-provider-brand-picker.png)
+
 ## 自行构建 DMG
 
 在安装 Node.js 24+ 的 macOS 上运行：
@@ -41,6 +51,8 @@ node apps/electron/scripts/package-mac.mjs
 ## 开发
 
 请阅读[开发指南](docs/development.md)和[架构文档](docs/architecture.md)。面向 agent，请遵循 [AGENTS.md](AGENTS.md)。
+
+开发 Electron 桌面端可在仓库根目录运行 `pnpm run dev:electron`。客户端改动会热更新；Electron、Host 与 Web shell 的源码改动会自动重启开发窗口。
 
 ## 许可证
 

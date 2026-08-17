@@ -146,6 +146,13 @@ export interface LlmProviderInfo {
   id: string
   /** Human-readable provider name for selectors and diagnostics. */
   name: string
+  /**
+   * Optional static brand-mark id selected for a custom route. This is
+   * presentation metadata only: adapters still own the route, endpoint, and
+   * model protocol. Clients that do not recognize an id render their neutral
+   * provider mark instead.
+   */
+  brandIcon?: string
 }
 
 /** Merge-extensible provider model modality vocabulary. */
@@ -168,6 +175,8 @@ export interface LlmConfigurableProvider {
   provider: string
   /** Human-readable provider name for configuration surfaces. */
   displayName: string
+  /** Optional static brand-mark id selected for this route's settings and model selectors. */
+  brandIcon?: string
   /** User-settings namespace whose section configures this provider. */
   settingsNs: string
   /**

@@ -53,6 +53,8 @@ function optionsOf(directory: SessionModels, t: TranslateNS<'model'>): SelectOpt
         id: rowId(group.id, model.id),
         label: model.name,
         detail: model.description !== undefined ? `${group.name} · ${model.description}` : group.name,
+        providerId: group.id,
+        ...group.brandIcon === undefined ? {} : { providerBrandIcon: group.brandIcon },
         ...(directory.current.provider === group.id && directory.current.model === model.id
           ? { active: true } : {}),
       })

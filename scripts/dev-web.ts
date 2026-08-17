@@ -111,4 +111,9 @@ if (isMain) {
     `dev-web: watching ${String(pluginDirs.length)} dsh.client plugin packages`
     + `${pollInterval !== undefined ? ` (polling ${String(pollInterval)}ms)` : ''}:\n  ${pluginDirs.join('\n  ')}`,
   )
+  // tsdown's watch handles are intentionally unref'd. Without one ordinary
+  // event-loop handle, Node exits immediately after the first build and an
+  // apparently successful `pnpm run dev:web` never observes a source edit.
+  // Keep the documented watcher command alive until the developer stops it.
+  setInterval(() => undefined, 2 ** 31 - 1)
 }

@@ -2357,6 +2357,9 @@ importers:
 
   packages/client/ui-primitives:
     dependencies:
+      '@lobehub/icons-static-svg':
+        specifier: 1.94.0
+        version: 1.94.0
       '@shikijs/langs':
         specifier: ^4.3.1
         version: 4.3.1
@@ -10153,6 +10156,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@lobehub/icons-static-svg@1.94.0':
+    resolution: {integrity: sha512-Inx1TYkjLH6YeHOIHeVW9+OM/xxRnk8TmcQVKquFUDBmE3X9sUuRGt7kALrrDBNNAbrWz7Qq6fAiFj9E9Mmw9Q==}
+
   '@malept/cross-spawn-promise@2.0.0':
     resolution: {integrity: sha512-1DpKU0Z5ThltBwjNySMC14g0CkbyhCaz9FkhxqNsZI6uAPJXFS8cMXlBKo26FJ8ZuW6S9GCMcR9IO5k2X5/9Fg==}
     engines: {node: '>= 12.13.0'}
@@ -16263,6 +16269,8 @@ snapshots:
 
   '@koromix/koffi-win32-x64@3.1.1':
     optional: true
+
+  '@lobehub/icons-static-svg@1.94.0': {}
 
   '@malept/cross-spawn-promise@2.0.0':
     dependencies:

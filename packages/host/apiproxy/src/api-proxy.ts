@@ -358,6 +358,7 @@ async function buildModelCatalog(ctx: Context): Promise<{
       const group: ModelProviderGroup = {
         id: provider.id,
         name: provider.name,
+        ...provider.brandIcon === undefined ? {} : { brandIcon: provider.brandIcon },
         models: entries,
       }
       return { kind: 'group' as const, group }
@@ -3376,6 +3377,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         const views: ConfigurableProviderView[] = directory.map(entry => ({
           provider: entry.provider,
           displayName: entry.displayName,
+          ...entry.brandIcon === undefined ? {} : { brandIcon: entry.brandIcon },
           settingsNs: entry.settingsNs,
           settingsPath: [...entry.settingsPath],
           active: active.has(entry.provider),
@@ -3389,6 +3391,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           views.push({
             provider: provider.id,
             displayName: provider.name,
+            ...provider.brandIcon === undefined ? {} : { brandIcon: provider.brandIcon },
             settingsNs: '',
             settingsPath: [],
             active: true,

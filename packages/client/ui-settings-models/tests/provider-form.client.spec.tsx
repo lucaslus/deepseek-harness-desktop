@@ -708,6 +708,23 @@ describe('hand-declared providers', () => {
     expect(set).toHaveBeenCalledWith({ ref: 'ACME_GATEWAY_API_KEY', value: 'gw-key' })
   })
 
+  it('persists a bundled brand choice for a hand-declared provider', async () => {
+    const { mutate, onClose } = mountCard()
+
+    fireEvent.change(screen.getByLabelText(en.customRoute), { target: { value: 'kimi-proxy' } })
+    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://api.moonshot.cn/v1' } })
+    fireEvent.click(screen.getByRole('button', { name: en.brandIcon }))
+    fireEvent.click(await screen.findByText('Kimi / Moonshot AI'))
+    fireEvent.click(screen.getByRole('button', { name: en.addModel }))
+    fireEvent.change(screen.getByLabelText(`${en.modelId} 1`), { target: { value: 'kimi-k2.6' } })
+    fireEvent.click(screen.getByText(en.create))
+
+    await waitFor(() => { expect(onClose).toHaveBeenCalledWith(true) })
+    expect(firstMutate(mutate).ops[0]).toMatchObject({
+      value: expect.objectContaining({ brandIcon: 'moonshotai' }),
+    })
+  })
+
   it('scopes each card to fields a provider can actually own', async () => {
     // Reasoning effort is a per-MODEL capability and the
     // models under one provider disagree about it, so a provider-scoped

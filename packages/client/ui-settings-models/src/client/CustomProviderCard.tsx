@@ -26,6 +26,7 @@ import type { ReactNode } from 'react'
 import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
 import { apiKeyFailure } from './apiKey.ts'
 import { EditorFooter } from './EditorFooter.tsx'
+import { BrandIconPicker } from './BrandIconPicker.tsx'
 import { validateDeepSeekModels } from './DeepSeekModelsEditor.tsx'
 import { ModelListEditor } from './ModelListEditor.tsx'
 import type { ModelDraft } from './ModelListEditor.tsx'
@@ -80,6 +81,7 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
   const [openedAt] = useState(() => props.revision)
   const [route, setRoute] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [brandIcon, setBrandIcon] = useState<string | undefined>(undefined)
   const [baseURL, setBaseURL] = useState('')
   const [protocol, setProtocol] = useState(protocols[0] ?? '')
   const [keyDraft, setKeyDraft] = useState('')
@@ -135,6 +137,7 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
     if (!committed) {
       const profile = {
         ...displayName.length === 0 ? {} : { displayName },
+        ...brandIcon === undefined ? {} : { brandIcon },
         // The profile names the conventional reference only when this card is
         // about to store a key, matching the editor: a route declared with the
         // key left blank keeps its provider-native auth path (a credential
@@ -221,6 +224,14 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
           onChange={(event) => { setDisplayName(event.target.value) }}
         />
       </div>
+      <BrandIconPicker
+        provider={route}
+        value={brandIcon}
+        onChange={setBrandIcon}
+        disabled={profileDisabled}
+        label={t('brandIcon')}
+        genericLabel={t('brandIconGeneric')}
+      />
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('baseUrl')}</span>
         <input

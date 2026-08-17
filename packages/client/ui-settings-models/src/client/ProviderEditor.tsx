@@ -32,6 +32,7 @@ import {
 } from './DeepSeekModelsEditor.tsx'
 import { apiKeyFailure } from './apiKey.ts'
 import { EditorFooter } from './EditorFooter.tsx'
+import { BrandIconPicker } from './BrandIconPicker.tsx'
 import { ModelListEditor } from './ModelListEditor.tsx'
 import { deriveKeyRef, messageOf, protocolChoices } from './store.ts'
 import type { en } from './locales.ts'
@@ -384,26 +385,36 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
                 its catalog entry and neither belongs on its card. */}
             {ownsIdentity
               ? (
-                <div className={styles['field']}>
-                  <span className={styles['fieldLabel']}>{t('customDisplayName')}</span>
-                  <input
-                    className={styles['input']}
-                    type="text"
-                    value={stringAt(draft, 'displayName') ?? ''}
-                    // What this route is called the moment the field is
-                    // cleared, which is the layer beneath the one this field
-                    // edits: a `cordis.yml` may pin a name for a route the
-                    // catalog does not ship, and only when nothing does is
-                    // the answer the route id. Reading the effective value
-                    // instead would echo the stored override back as the
-                    // thing clearing restores.
-                    placeholder={stringAt(getPath(namespace.base, settingsPath), 'displayName')
-                      ?? props.provider}
-                    aria-label={t('customDisplayName')}
+                <>
+                  <div className={styles['field']}>
+                    <span className={styles['fieldLabel']}>{t('customDisplayName')}</span>
+                    <input
+                      className={styles['input']}
+                      type="text"
+                      value={stringAt(draft, 'displayName') ?? ''}
+                      // What this route is called the moment the field is
+                      // cleared, which is the layer beneath the one this field
+                      // edits: a `cordis.yml` may pin a name for a route the
+                      // catalog does not ship, and only when nothing does is
+                      // the answer the route id. Reading the effective value
+                      // instead would echo the stored override back as the
+                      // thing clearing restores.
+                      placeholder={stringAt(getPath(namespace.base, settingsPath), 'displayName')
+                        ?? props.provider}
+                      aria-label={t('customDisplayName')}
+                      disabled={disabled}
+                      onChange={(event) => { setField('displayName', event.target.value) }}
+                    />
+                  </div>
+                  <BrandIconPicker
+                    provider={props.provider}
+                    value={stringAt(draft, 'brandIcon')}
+                    onChange={(next) => { setField('brandIcon', next) }}
                     disabled={disabled}
-                    onChange={(event) => { setField('displayName', event.target.value) }}
+                    label={t('brandIcon')}
+                    genericLabel={t('brandIconGeneric')}
                   />
-                </div>
+                </>
               )
               : null}
             <div className={styles['field']}>

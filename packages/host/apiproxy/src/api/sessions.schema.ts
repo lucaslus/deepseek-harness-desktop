@@ -177,6 +177,7 @@ export const modelCatalogModelSchema = z.object({
 export const modelProviderGroupSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  brandIcon: z.string().min(1).optional(),
   models: z.array(modelCatalogModelSchema),
 }) satisfies z.ZodType<Wire<ModelProviderGroup>>
 

@@ -151,7 +151,7 @@ describe('ui-model-selection dual entry', () => {
     b.mint('s1')
     const options = await b.contribution().ui.options(projection('s1'), new AbortController().signal)
     expect(options.map((o: SelectOption) => o.label)).toEqual(['DeepSeek-V4-Flash', 'DeepSeek-V4-Pro'])
-    expect(options[0]).toMatchObject({ active: true, detail: 'DeepSeek' })
+    expect(options[0]).toMatchObject({ active: true, detail: 'DeepSeek', providerId: 'deepseek-official' })
     expect(options[1]?.active).toBeUndefined()
   })
 

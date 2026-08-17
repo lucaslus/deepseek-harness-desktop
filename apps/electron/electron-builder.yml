@@ -10,7 +10,12 @@ directories:
   output: dist/release
 files:
   - main.mjs
+  - splash.html
   - package.json
+  # Harness is staged separately in Contents/Resources by afterPack. Do not
+  # let electron-builder discover the parent workspace's development tree and
+  # put a second copy into app.asar.
+  - '!node_modules/**'
 afterPack: scripts/copy-harness-runtime.mjs
 mac:
   category: public.app-category.developer-tools

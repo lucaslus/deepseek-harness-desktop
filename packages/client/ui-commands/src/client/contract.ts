@@ -20,6 +20,10 @@ export interface SelectOption {
   readonly id: string
   readonly label: string
   readonly detail?: string
+  /** Provider route whose shared brand mark the popup renders before this row. */
+  readonly providerId?: string
+  /** Optional configured brand override for {@link providerId}. */
+  readonly providerBrandIcon?: string
   readonly active?: boolean
   /** Optional in-page risk gate owned by the shared popup shell. */
   readonly confirmation?: SelectConfirmation

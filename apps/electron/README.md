@@ -23,6 +23,21 @@ output is in `apps/electron/dist/release/` and is intentionally ignored by Git.
 The build machine needs macOS, Node.js 24 or later, and Corepack. The repository
 pins pnpm 11.7.0, so a fresh checkout can be prepared with `corepack enable`.
 
+## Development
+
+Run this from the repository root:
+
+```bash
+pnpm run dev:electron
+```
+
+The command builds the web shell once, watches all client plugins, starts an
+Electron window, and runs the Harness host directly from the workspace. Client
+changes hot-reload in the open window. Changes to the Electron main process or
+host/runtime sources restart the development window automatically; changes to
+the web shell rebuild it and then restart the window. Press `Ctrl+C` in the
+terminal to stop both Electron and its watchers.
+
 ## Release contract
 
 Pushing a tag named `electron-v<version>` starts `.github/workflows/electron-release.yml`.

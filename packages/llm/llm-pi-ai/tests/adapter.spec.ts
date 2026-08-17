@@ -157,11 +157,14 @@ describe('PiAiAdapter provider routing', () => {
   it('names a route by its displayName, and by its own key once the profiles drop it', () => {
     const adapter = adapterOf({ 'acme-gateway': {
       displayName: 'Acme Gateway',
+      brandIcon: 'moonshotai',
       api: 'openai-completions',
       baseURL: 'https://acme.test/v1',
       models: [{ id: 'acme-large' }],
     } })
-    expect(adapter.providerInfo('acme-gateway')).toEqual({ id: 'acme-gateway', name: 'Acme Gateway' })
+    expect(adapter.providerInfo('acme-gateway')).toEqual({
+      id: 'acme-gateway', name: 'Acme Gateway', brandIcon: 'moonshotai',
+    })
 
     // The registry and the profiles can disagree for a moment: a refused
     // registration swap leaves the previous routes serving while resolution

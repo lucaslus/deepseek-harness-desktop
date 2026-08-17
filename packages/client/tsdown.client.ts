@@ -11,6 +11,7 @@
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { basename, dirname, relative, resolve as resolvePath, sep } from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import type { UserConfig } from 'tsdown'
 import { transform } from 'lightningcss'
@@ -23,6 +24,10 @@ import { PLATFORM_MODULES } from './web/src/platform.ts'
  */
 const CSS_VIRTUAL_PREFIX = '\0dsh-css:'
 const CSS_VIRTUAL_SUFFIX = '.mjs'
+
+/** Virtual module wrapper for SVG assets embedded in a client plugin bundle. */
+const SVG_VIRTUAL_PREFIX = '\0dsh-svg:'
+const SVG_VIRTUAL_SUFFIX = '.mjs'
 
 /**
  * Wire/type layers a client bundle may inline: browser-safe contracts
@@ -257,6 +262,28 @@ function clientConfig(id: string, entry: string): UserConfig {
           '}',
           `export default ${JSON.stringify(classMap)};`,
         ].join('\n')
+      },
+    }, {
+      // Client plugins are served as one self-contained JavaScript asset, not
+      // from Vite's ordinary asset graph. Resolve an imported SVG ourselves
+      // and embed it as a data URI so a small visual asset remains portable
+      // with the plugin that owns it. This also lets a package such as
+      // @lobehub/icons-static-svg stay a collection of plain SVG files.
+      name: 'dsh-svg-inline',
+      resolveId(source: string, importer: string | undefined) {
+        if (!source.endsWith('.svg')) return null
+        if (importer === undefined) return null
+        const abs = source.startsWith('.')
+          ? sourceAssetPath(source, importer)
+          : createRequire(importer).resolve(source)
+        return SVG_VIRTUAL_PREFIX + abs + SVG_VIRTUAL_SUFFIX
+      },
+      async load(virtualId: string) {
+        if (!virtualId.startsWith(SVG_VIRTUAL_PREFIX)) return null
+        const fileId = virtualId.slice(SVG_VIRTUAL_PREFIX.length, -SVG_VIRTUAL_SUFFIX.length)
+        this.addWatchFile(fileId)
+        const source = await readFile(fileId, 'utf8')
+        return `export default ${JSON.stringify(`data:image/svg+xml,${encodeURIComponent(source)}`)};`
       },
     }],
     outputOptions: {

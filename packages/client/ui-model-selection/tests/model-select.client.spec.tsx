@@ -66,6 +66,13 @@ describe('ModelSelect reasoning effort', () => {
     const trigger = screen.getByRole('button', {
       name: '选择模型，当前 DeepSeek-V4-Flash，推理等级 High',
     })
+    // The current route and every model candidate expose the same provider
+    // mark, so a route switch never loses its visual provenance.
+    expect(trigger.querySelector('img')).not.toBeNull()
+    fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' }).querySelector('img')).not.toBeNull()
+    fireEvent.click(trigger)
     fireEvent.click(trigger)
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
     expect(screen.getAllByRole('menuitemradio').map(item => item.textContent))

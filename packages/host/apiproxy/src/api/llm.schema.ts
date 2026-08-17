@@ -13,6 +13,7 @@ import { modelCatalogFailureSchema, modelProviderGroupSchema } from './sessions.
 export const configurableProviderViewSchema = z.object({
   provider: z.string().min(1),
   displayName: z.string().min(1),
+  brandIcon: z.string().min(1).optional(),
   settingsNs: z.string(),
   settingsPath: z.array(z.string()),
   active: z.boolean(),

@@ -141,6 +141,9 @@
   position: sticky;
   top: 0;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 8px 3px;
   background: var(--dsw-specific-menu);
   color: var(--dsw-alias-label-tertiary);
@@ -186,6 +189,10 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
+}
+
+.optionBrand {
+  color: var(--dsw-alias-label-secondary);
 }
 
 .modelName {

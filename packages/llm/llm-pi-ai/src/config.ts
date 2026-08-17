@@ -68,6 +68,12 @@ export interface PiAiProviderProfile {
   /** Name shown by configuration surfaces; defaults to the route key. */
   displayName?: string
   /**
+   * Static brand-mark id for custom routes (for example `moonshotai` for a
+   * Kimi-compatible endpoint). It affects only client presentation and never
+   * changes the protocol or endpoint used for requests.
+   */
+  brandIcon?: string
+  /**
    * Wire protocol every model on this route speaks. Omission keeps each
    * installed catalog model's own protocol, which is why a catalog route needs
    * no protocol at all; a route the catalog does not ship must name one.
@@ -232,6 +238,7 @@ const modelOverride: z<PiAiModelOverride> = z.object(modelFields)
 const profile = z.object({
   apiKeyEnv: z.string().role('credential-ref'),
   displayName: z.string(),
+  brandIcon: z.string(),
   api: z.union(supportedProtocols()),
   baseURL: z.string(),
   models: z.array(modelProfile),

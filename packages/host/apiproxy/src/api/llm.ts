@@ -17,6 +17,8 @@ export interface ConfigurableProviderView {
   provider: string
   /** Human-readable name for configuration surfaces. */
   displayName: string
+  /** Optional static brand-mark id selected for this provider. */
+  brandIcon?: string
   /** Settings namespace whose section configures this provider. */
   settingsNs: string
   /** Path from that section's root to the provider's profile object (empty = whole section). */

@@ -15,7 +15,9 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
-import { Button, IconPlusOutline16, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import {
+  Button, IconChevronDownOutline14, IconPlusOutline16, Menu, Modal, ProviderBrandIcon,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-web-react'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
 import { deriveKeyRef, messageOf, protocolChoices, providerUsable } from './store.ts'
@@ -184,6 +186,7 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
   const [deleteFailure, setDeleteFailure] = useState<string | undefined>(undefined)
   const [savedTarget, setSavedTarget] = useState<ProviderIdentity | undefined>(undefined)
   const [declaring, setDeclaring] = useState(false)
+  const [providerMenuOpen, setProviderMenuOpen] = useState(false)
   const [dismissedSetup, setDismissedSetup] = useState<ReadonlySet<string>>(() => new Set())
 
   const announceSaved = (target: ProviderIdentity): void => {
@@ -314,6 +317,7 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
             <li key={row.entry.provider} className={styles['rowCard']}>
               <div className={styles['rowHead']}>
                 <span className={styles['rowIdentity']}>
+                  <ProviderBrandIcon provider={row.entry.provider} brandIcon={row.entry.brandIcon} size={20} />
                   <span className={styles['rowName']}>{row.entry.displayName}</span>
                   {/* Only the adapter can tell a hand-declared route from a
                       shipped one it also has a stored profile for, so the tag
@@ -397,21 +401,44 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
             <div className={styles['addCard']}>
               <div className={styles['field']}>
                 <span className={styles['fieldLabel']}>{t('provider')}</span>
-                <select
-                  className={`${styles['input']} ${styles['selectInput']}`}
-                  value={addTarget.provider}
-                  aria-label={t('provider')}
-                  onChange={(event) => {
-                    const row = addable.find(candidate => candidate.entry.provider === event.target.value)
-                    /* v8 ignore next -- the select only lists addable rows */
+                <Menu
+                  open={providerMenuOpen}
+                  portal
+                  dense
+                  className={styles['providerPicker'] ?? ''}
+                  selectedId={addTarget.provider}
+                  items={addable.map(row => ({
+                    id: row.entry.provider,
+                    label: row.entry.displayName,
+                    icon: <ProviderBrandIcon provider={row.entry.provider} brandIcon={row.entry.brandIcon} size={18} />,
+                  }))}
+                  onClose={() => { setProviderMenuOpen(false) }}
+                  onSelect={(provider) => {
+                    const row = addable.find(candidate => candidate.entry.provider === provider)
+                    /* v8 ignore next -- the menu only lists addable rows */
                     if (row === undefined) return
                     setEditing(targetOf(row))
+                    setProviderMenuOpen(false)
                   }}
-                >
-                  {addable.map(row => (
-                    <option key={row.entry.provider} value={row.entry.provider}>{row.entry.displayName}</option>
-                  ))}
-                </select>
+                  anchor={(
+                    <button
+                      type="button"
+                      className={styles['providerPickerButton']}
+                      aria-label={t('provider')}
+                      aria-haspopup="menu"
+                      aria-expanded={providerMenuOpen}
+                      onClick={() => { setProviderMenuOpen(open => !open) }}
+                    >
+                      <ProviderBrandIcon
+                        provider={addTarget.provider}
+                        brandIcon={state.rows.find(row => row.entry.provider === addTarget.provider)?.entry.brandIcon}
+                        size={18}
+                      />
+                      <span className={styles['providerPickerName']}>{addTarget.displayName}</span>
+                      <IconChevronDownOutline14 className={providerMenuOpen ? styles['providerPickerChevronOpen'] : undefined} />
+                    </button>
+                  )}
+                />
               </div>
               <ProviderEditor
                 key={addTarget.provider}

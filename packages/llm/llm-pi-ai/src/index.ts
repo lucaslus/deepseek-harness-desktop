@@ -99,6 +99,7 @@ function registrationFacts(profiles: ReadonlyMap<string, ResolvedPiAiProviderPro
     .map(([provider, profile]) => ({
       provider,
       displayName: profile.displayName,
+      ...profile.brandIcon === undefined ? {} : { brandIcon: profile.brandIcon },
       retryPolicy: profile.retryPolicy,
     }))
     .sort((left, right) => left.provider.localeCompare(right.provider))
@@ -122,10 +123,11 @@ function directoryEntries(
 ): LlmConfigurableProvider[] {
   const catalog = new Set(catalogProviderIds())
   const entries = new Map<string, LlmConfigurableProvider>()
-  const declare = (provider: string, displayName: string): void => {
+  const declare = (provider: string, displayName: string, brandIcon?: string): void => {
     entries.set(provider, {
       provider,
       displayName,
+      ...brandIcon === undefined ? {} : { brandIcon },
       settingsNs: NS,
       settingsPath: ['providers', provider],
       // Membership of the installed catalog, not of the settings document:
@@ -142,7 +144,7 @@ function directoryEntries(
   for (const provider of catalog) {
     if (catalogProviderTakesApiKey(provider)) declare(provider, provider)
   }
-  for (const [provider, profile] of profiles) declare(provider, profile.displayName)
+  for (const [provider, profile] of profiles) declare(provider, profile.displayName, profile.brandIcon)
   return [...entries.values()]
 }
 

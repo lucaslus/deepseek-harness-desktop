@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow, Menu, dialog, shell } from 'electron'
 
 const readinessPattern = /dsh web: (http:\/\/127\.0\.0\.1:\d+)/
+const development = process.env.DSH_ELECTRON_DEV === '1'
 const desktopChromeScript = `
   (() => {
     document.documentElement.style.setProperty('--dsh-sidebar-logo-row-content-offset', '12px');
@@ -32,6 +33,14 @@ function harnessDirectory() {
     : join(import.meta.dirname, '..', 'dist', 'harness')
 }
 
+function sourceHarnessEntry() {
+  return join(import.meta.dirname, '..', '..', '..', 'apps', 'cli', 'src', 'bin.ts')
+}
+
+function sourceHarnessWorkingDirectory() {
+  return join(import.meta.dirname, '..', '..', '..')
+}
+
 function harnessEntry() {
   return join(harnessDirectory(), 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js')
 }
@@ -55,14 +64,22 @@ function showHostFailure() {
 }
 
 function startHost() {
-  const entry = harnessEntry()
-  if (!existsSync(entry)) throw new Error(`Missing packaged Harness runtime: ${entry}`)
+  const entry = development ? sourceHarnessEntry() : harnessEntry()
+  if (!existsSync(entry)) throw new Error(`Missing ${development ? 'source' : 'packaged'} Harness runtime: ${entry}`)
   // Harness enables its HMR service in the default web profile.  Electron is
   // also the embedded Node runtime, so pass this Node flag directly to that
   // child process (NODE_OPTIONS deliberately rejects this diagnostic flag).
-  host = spawn(process.execPath, ['--expose-internals', entry, 'web', '--port', '0'], {
-    cwd: harnessWorkingDirectory(),
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_ENV: 'production' },
+  host = spawn(process.execPath, [
+    '--expose-internals',
+    ...development ? ['--import', 'tsx/esm'] : [],
+    entry, 'web', '--port', '0',
+  ], {
+    cwd: development ? sourceHarnessWorkingDirectory() : harnessWorkingDirectory(),
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      NODE_ENV: development ? 'development' : 'production',
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   host.stdout.setEncoding('utf8')

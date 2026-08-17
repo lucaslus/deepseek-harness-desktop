@@ -388,7 +388,11 @@ export class LlmRuntime extends Service {
         ?? resolveRetryPolicy(undefined, `llm: provider "${provider}" retryPolicy`)
       registrations.push({
         adapter,
-        provider: { id: info.id, name: info.name },
+        provider: {
+          id: info.id,
+          name: info.name,
+          ...info.brandIcon === undefined ? {} : { brandIcon: info.brandIcon },
+        },
         retryPolicy,
       })
     }

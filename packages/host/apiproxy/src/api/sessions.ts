@@ -134,6 +134,8 @@ export interface ModelProviderGroup {
   id: string
   /** Provider display name. */
   name: string
+  /** Optional static brand-mark id selected for this provider route. */
+  brandIcon?: string
   /** Models in provider-preferred order. */
   models: ModelCatalogModel[]
 }

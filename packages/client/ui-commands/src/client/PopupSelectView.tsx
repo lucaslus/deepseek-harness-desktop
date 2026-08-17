@@ -12,7 +12,7 @@
 import { useEffect, useRef } from 'react'
 import { useSyncExternalStore } from 'react'
 import clsx from 'clsx'
-import { IconCheckOutline16, RiskConfirmation, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconCheckOutline16, ProviderBrandIcon, RiskConfirmation, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { filterOptions } from './popup.ts'
 import type { PopupSelectController } from './popup.ts'
@@ -148,6 +148,14 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
                   onClick={() => { void popup.select(index) }}
                   onMouseEnter={() => { popup.highlight(index) }}
                 >
+                  {option.providerId !== undefined && (
+                    <ProviderBrandIcon
+                      provider={option.providerId}
+                      brandIcon={option.providerBrandIcon}
+                      size={16}
+                      className={css.providerBrand}
+                    />
+                  )}
                   <span className={css.label}>{option.label}</span>
                   {option.detail !== undefined && <span className={css.detail}>{option.detail}</span>}
                   {option.active === true && <span className={css.check}><IconCheckOutline16 /></span>}

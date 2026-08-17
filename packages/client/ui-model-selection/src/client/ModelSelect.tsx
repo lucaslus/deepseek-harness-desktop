@@ -19,7 +19,7 @@ import clsx from 'clsx'
 import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import {
   IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
-  IconWarningOutline16, Toast,
+  IconWarningOutline16, ProviderBrandIcon, Toast,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ModelSelectInjected } from './slots.ts'
@@ -236,6 +236,13 @@ export function ModelSelect(
           }
         }}
       >
+        {currentChoice !== undefined && (
+          <ProviderBrandIcon
+            provider={currentChoice.selection.provider}
+            brandIcon={currentChoice.group.brandIcon}
+            size={16}
+          />
+        )}
         <span className={css.triggerLabel}>{modelLabel}</span>
         {effortLabel !== undefined && <span className={css.triggerEffort}>{effortLabel}</span>}
         <IconChevronDownOutline14 className={clsx(css.chevron, open && css.chevronOpen)} />
@@ -252,6 +259,13 @@ export function ModelSelect(
           {pane === 'root' && (
             <>
               <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { setPane('model') }}>
+                {currentChoice !== undefined && (
+                  <ProviderBrandIcon
+                    provider={currentChoice.selection.provider}
+                    brandIcon={currentChoice.group.brandIcon}
+                    size={16}
+                  />
+                )}
                 <span className={css.cellLabel}>{t('menu.model')}</span>
                 <span className={css.cellValue}>{modelLabel}</span>
                 <IconChevronRightOutline14 className={css.cellChevron} />
@@ -288,7 +302,10 @@ export function ModelSelect(
                   const headingId = `${id}-${group.id}`
                   return (
                     <section role="group" aria-labelledby={headingId} className={css.group} key={group.id}>
-                      <div className={css.groupTitle} id={headingId}>{group.name}</div>
+                      <div className={css.groupTitle} id={headingId}>
+                        <ProviderBrandIcon provider={group.id} brandIcon={group.brandIcon} size={16} />
+                        <span>{group.name}</span>
+                      </div>
                       {group.models.map((model) => {
                         const selected = state.current?.provider === group.id && state.current.model === model.id
                         return (
@@ -303,6 +320,7 @@ export function ModelSelect(
                             disabled={busy}
                             onClick={() => { choose({ provider: group.id, model: model.id }) }}
                           >
+                            <ProviderBrandIcon provider={group.id} brandIcon={group.brandIcon} size={16} className={css.optionBrand} />
                             <span className={css.optionCopy}>
                               <span className={css.modelName}>{model.name}</span>
                               {model.description !== undefined && (
