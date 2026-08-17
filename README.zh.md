@@ -1,38 +1,38 @@
-# DeepSeek Harness Desktop
+<h1 align="center">
+  <img src="docs/images/deepseek-harness-desktop-icon.png" alt="DeepSeek Harness Desktop" width="42" valign="middle">
+  DeepSeek Harness Desktop
+</h1>
 
 [English](README.md) | 中文
 
-DeepSeek Harness Desktop 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 macOS 桌面外壳。它在原生 AppKit 窗口中运行 upstream Web UI，同时把源码 checkout 和 Node.js 运行时保留在用户自己的机器上。
+DeepSeek Harness Desktop 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 macOS 桌面应用。它将上游 Web UI 和所需的 Node 运行时打包进经过签名的原生应用，用户无需 clone 源码或自行配置 Node.js。
+
+![DeepSeek Harness Desktop](docs/images/deepseek-harness-desktop-hero.png)
 
 ## 在 macOS 安装
 
-运行：
+从 [GitHub Releases](https://github.com/lucaslus/deepseek-harness-desktop/releases) 下载对应架构的 **DMG**：Apple Silicon（M 系列）选择 **arm64**，Intel Mac 选择 **x64**。打开后将 **DeepSeek Harness** 拖进 **Applications**；随后可通过 Finder、Spotlight 和 Dock 正常使用。
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/lucaslus/deepseek-harness-desktop/master/apps/desktop/bootstrap.sh | bash
-```
+应用菜单中的 **Check for Updates…** 会检查已发布的新版本。只有 GitHub Release 已发布、并包含签名 ZIP 与 `latest-mac.yml` 更新元数据时，应用才会提供自动更新。
 
-该命令会把 `master` 当前源码以 shallow clone 方式放到 `~/.dsh-desktop`；若本机已有 Node.js 24.15.0 则直接复用，否则才将已校验的副本下载到该 checkout 内。随后通过 Corepack 选择 pnpm 11.7.0，构建并打开应用。终端只会显示简洁的阶段与加载动画，命令详细输出会写入 `~/Library/Logs/DeepSeek Harness Desktop/`；某个阶段失败时会提示对应日志路径。安装器会询问是否将 **DeepSeek Harness** 加入 `/Applications`；选择 `y` 会复制体积很小的原生壳、向 macOS 注册，并在每次应用更新后刷新该副本。Finder、Spotlight 和 Dock 因此能找到应用，而源码和 Node runtime 仍保留在 checkout 内。
+## 自行构建 DMG
 
-Node.js 不会被嵌入 App，也不会发布大型 Release；用户无需全局安装 Node 或 pnpm。如果 Mac 缺少 Git 或 Swift 编译器，macOS 会显示一次性的 Command Line Tools 确认窗口；完成后重新运行该命令即可。
-
-## 更新
-
-从应用菜单选择 **Update and Restart…**。应用会先对 `origin/master` 执行 `git pull --ff-only`；仅当该步骤成功时，才会安装锁定依赖、重新构建自身并重启。因此手动触发更新时，即使 Git 返回“已经是最新”，也会重新构建；它不会应用非 `master` 分支或尚未合并的 upstream 代码。
-
-如果 checkout 有未提交改动，或 Git 历史无法快进，更新会拒绝执行，避免覆盖本地工作。
-
-## 从现有 checkout 安装
-
-如果你想使用其他工作目录：
+在安装 Node.js 24+ 的 macOS 上运行：
 
 ```sh
 git clone https://github.com/lucaslus/deepseek-harness-desktop.git
 cd deepseek-harness-desktop
-bash apps/desktop/install.sh
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run build
+node apps/electron/scripts/package-mac.mjs
 ```
 
-运行时行为和已知限制见[桌面端实现说明](apps/desktop/README.md)。
+产物在 `apps/electron/dist/release/` 中。DMG 用于手动安装，ZIP 用于自动更新。本地构建不含发布签名，Gatekeeper 出现提示属于正常现象。
+
+## 发布流程
+
+发布工作流会分别构建、签名和公证 Apple Silicon 与 Intel 版本。先将 `apps/electron/app/package.json` 的版本更新为目标版本，再推送对应的 `electron-v<version>` tag。GitHub Actions 会创建一个**草稿** GitHub Release，其中包含两种 DMG、两种自动更新 ZIP 以及 `latest-mac.yml`。确认产物后手动发布；只有已发布的 Release 才会被应用内更新检测到。
 
 ## Upstream
 

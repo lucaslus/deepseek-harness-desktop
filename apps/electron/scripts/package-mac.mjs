@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import { join } from 'node:path'
 
 const arch = process.argv[2] ?? process.arch
-if (!['arm64', 'x64', 'universal'].includes(arch)) {
+if (!['arm64', 'x64'].includes(arch)) {
   throw new Error(`Unsupported macOS architecture: ${arch}`)
 }
 
@@ -16,7 +16,7 @@ function run(command, args, env = process.env) {
   })
 }
 
-await run(process.execPath, ['scripts/stage-runtime.mjs'])
+await run(process.execPath, ['scripts/stage-runtime.mjs', arch])
 
 // A local build should remain quick and runnable without selecting an unrelated
 // Apple Development identity from the developer's keychain. Release CI supplies

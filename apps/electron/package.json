@@ -7,7 +7,6 @@
   "scripts": {
     "stage-runtime": "node scripts/stage-runtime.mjs",
     "package:mac": "node scripts/package-mac.mjs",
-    "package:mac:universal": "node scripts/package-mac.mjs universal",
     "package:mac:arm64": "node scripts/package-mac.mjs arm64",
     "package:mac:x64": "node scripts/package-mac.mjs x64"
   },

@@ -4,8 +4,8 @@ artifactName: ${productName}-${version}-${arch}.${ext}
 npmRebuild: false
 directories:
   # Build from the small shell-only workspace.  The separate parent workspace
-  # is used solely to deploy Harness into Contents/Resources after Universal
-  # merging, so it is copied exactly once.
+  # is used solely to stage Harness in Contents/Resources, so the dependency
+  # graph is copied exactly once.
   app: app
   output: dist/release
 files:

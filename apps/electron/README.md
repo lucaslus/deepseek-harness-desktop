@@ -12,11 +12,13 @@ From the repository root:
 ```bash
 pnpm install --frozen-lockfile
 pnpm run build
-node apps/electron/scripts/package-mac.mjs universal
+node apps/electron/scripts/package-mac.mjs
 ```
 
-This creates one installer for both Apple Silicon and Intel Macs. The output is
-in `apps/electron/dist/release/` and is intentionally ignored by Git.
+This creates an installer for the current Mac architecture. Pass `arm64` or
+`x64` explicitly to build that architecture; a package must be built on a Mac
+with the same CPU architecture so its native Harness dependencies match. The
+output is in `apps/electron/dist/release/` and is intentionally ignored by Git.
 
 The build machine needs macOS, Node.js 24 or later, and Corepack. The repository
 pins pnpm 11.7.0, so a fresh checkout can be prepared with `corepack enable`.
@@ -24,10 +26,11 @@ pins pnpm 11.7.0, so a fresh checkout can be prepared with `corepack enable`.
 ## Release contract
 
 Pushing a tag named `electron-v<version>` starts `.github/workflows/electron-release.yml`.
-It builds, signs, and notarizes one Universal macOS app, publishes DMG and ZIP
-assets to a GitHub Release, and uploads `latest-mac.yml`. The DMG is the
-manual installer; the signed ZIP plus `latest-mac.yml` enables the in-app
-updater.
+It builds, signs, and notarizes separate Apple Silicon and Intel macOS apps,
+publishes both DMG and ZIP assets to a GitHub Release, and uploads
+`latest-mac.yml`. The DMG is the manual installer; the signed ZIP plus
+`latest-mac.yml` enables the in-app updater and selects the matching CPU
+architecture automatically.
 
 Before tagging, set `apps/electron/app/package.json` to the same semantic
 version as the tag; for example, version `0.0.2` is released with

@@ -2,14 +2,29 @@ import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, Menu, dialog } from 'electron'
-import { autoUpdater } from 'electron-updater'
 
 const readinessPattern = /dsh web: (http:\/\/127\.0\.0\.1:\d+)/
+const desktopChromeScript = `
+  (() => {
+    document.documentElement.style.setProperty('--dsh-sidebar-logo-row-content-offset', '12px');
+    const id = 'dsh-electron-titlebar-drag-region';
+    if (document.getElementById(id) || !document.body) return;
+    const dragRegion = document.createElement('div');
+    dragRegion.id = id;
+    dragRegion.setAttribute('aria-hidden', 'true');
+    dragRegion.style.cssText = [
+      'position:fixed', 'inset:0 0 auto 0', 'height:44px',
+      'z-index:2147483647', '-webkit-app-region:drag',
+    ].join(';');
+    document.body.append(dragRegion);
+  })();
+`
 let host
 let mainWindow
 let hostOutput = ''
 let hostReady = false
 let quitting = false
+let autoUpdater
 
 function harnessDirectory() {
   return app.isPackaged
@@ -72,47 +87,75 @@ function stopHost() {
   host = undefined
 }
 
-function configureUpdates() {
+async function getAutoUpdater() {
+  if (autoUpdater !== undefined) return autoUpdater
+  // electron-updater is CommonJS. Load it after the native window and Harness
+  // host are already starting, rather than putting updater initialization on
+  // the cold-start path.
+  const { default: updater } = await import('electron-updater')
+  autoUpdater = updater.autoUpdater
+  return autoUpdater
+}
+
+async function checkForUpdates() {
+  try {
+    const updater = await getAutoUpdater()
+    await updater.checkForUpdates()
+  } catch (error) {
+    console.error('Automatic update check failed:', error)
+  }
+}
+
+async function configureUpdates() {
   if (!app.isPackaged) return
-  autoUpdater.autoDownload = false
-  autoUpdater.on('update-available', async info => {
+  const updater = await getAutoUpdater()
+  updater.autoDownload = false
+  updater.on('update-available', async info => {
     const { response } = await dialog.showMessageBox({
       type: 'info', buttons: ['Download and Restart', 'Later'], defaultId: 0,
       title: 'Update available', message: `DeepSeek Harness ${info.version} is available.`,
     })
-    if (response === 0) void autoUpdater.downloadUpdate()
+    if (response === 0) void updater.downloadUpdate()
   })
-  autoUpdater.on('update-downloaded', async () => {
+  updater.on('update-downloaded', async () => {
     const { response } = await dialog.showMessageBox({
       type: 'info', buttons: ['Restart now', 'Later'], defaultId: 0,
       title: 'Update ready', message: 'The update has downloaded and is ready to install.',
     })
-    if (response === 0) autoUpdater.quitAndInstall()
+    if (response === 0) updater.quitAndInstall()
   })
-  autoUpdater.on('error', error => console.error('Automatic update failed:', error))
-  void autoUpdater.checkForUpdates()
+  updater.on('error', error => console.error('Automatic update failed:', error))
+  void checkForUpdates()
 }
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1240, height: 820, minWidth: 900, minHeight: 600,
-    title: 'DeepSeek Harness', backgroundColor: '#171717',
+    title: 'DeepSeek Harness', backgroundColor: '#1b1b1c',
+    // Match the native AppKit shell: content fills the transparent title bar,
+    // the traffic lights stay native, and no duplicate window title is shown.
+    titleBarStyle: 'hiddenInset',
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   })
-  void mainWindow.loadURL('data:text/html,<body style="background:%23171717;color:white;font:16px -apple-system;padding:32px">Starting DeepSeek Harness…</body>')
+  mainWindow.webContents.on('dom-ready', () => {
+    void mainWindow?.webContents.executeJavaScript(desktopChromeScript).catch(error => {
+      console.error('Could not apply desktop window chrome:', error)
+    })
+  })
+  void mainWindow.loadFile(join(import.meta.dirname, 'splash.html'))
 }
 
 app.whenReady().then(() => {
   try {
     createWindow()
     startHost()
-    configureUpdates()
+    void configureUpdates()
     Menu.setApplicationMenu(Menu.buildFromTemplate([
       {
         label: 'DeepSeek Harness',
         submenu: [
           { role: 'about' }, { type: 'separator' },
-          { label: 'Check for Updates…', click: () => void autoUpdater.checkForUpdates() },
+          { label: 'Check for Updates…', click: () => void checkForUpdates() },
           { type: 'separator' }, { role: 'quit' },
         ],
       },

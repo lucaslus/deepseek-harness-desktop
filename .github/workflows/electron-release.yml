@@ -10,8 +10,16 @@ permissions:
 
 jobs:
   package:
-    name: Package macOS Universal
-    runs-on: macos-14
+    name: Package macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-14
+          - arch: x64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     env:
       CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -52,12 +60,12 @@ jobs:
         run: pnpm run build
 
       - name: Package, sign, and notarize
-        run: node apps/electron/scripts/package-mac.mjs universal
+        run: node apps/electron/scripts/package-mac.mjs ${{ matrix.arch }}
 
       - name: Upload release assets
         uses: actions/upload-artifact@v4
         with:
-          name: electron-macos-universal
+          name: electron-macos-${{ matrix.arch }}
           if-no-files-found: error
           path: |
             apps/electron/dist/release/*.dmg
@@ -87,6 +95,10 @@ jobs:
       - name: Publish release assets
         uses: softprops/action-gh-release@v2
         with:
+          # Publishing remains a deliberate maintainer action: validate the
+          # signed/notarized installers before exposing an updater-visible
+          # release to end users.
+          draft: true
           generate_release_notes: true
           files: |
             apps/electron/dist/release/*.dmg

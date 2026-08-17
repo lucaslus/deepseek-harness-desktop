@@ -5,6 +5,12 @@ import { dirname, join, resolve } from 'node:path'
 const repositoryRoot = resolve(import.meta.dirname, '../../..')
 const electronDirectory = resolve(import.meta.dirname, '..')
 const stagingDirectory = join(electronDirectory, 'dist', 'harness')
+const arch = process.argv[2] ?? process.arch
+
+if (!['arm64', 'x64'].includes(arch)) throw new Error(`Unsupported macOS architecture: ${arch}`)
+if (arch !== process.arch) {
+  throw new Error(`Build the ${arch} package on a matching ${arch} macOS runner so native dependencies are correct.`)
+}
 
 await rm(stagingDirectory, { recursive: true, force: true })
 await mkdir(dirname(stagingDirectory), { recursive: true })
@@ -29,7 +35,7 @@ for (const packageName of ['cosmokit', 'schemastery']) {
   )
 }
 await materializeLinks(stagingDirectory)
-await prunePlatformBinaries(stagingDirectory)
+await prunePlatformBinaries(stagingDirectory, arch)
 
 async function run(command, arguments_) {
   await new Promise((resolvePromise, reject) => {
@@ -56,14 +62,12 @@ async function materializeLinks(directory) {
   }
 }
 
-async function prunePlatformBinaries(directory) {
-  // node-pty ships native binaries for every supported operating system. A
-  // Universal macOS release needs both Darwin slices, but never the Windows
-  // and Linux ones. Keeping only these two directories cuts the shipped
-  // runtime materially without changing either macOS architecture's loader.
+async function prunePlatformBinaries(directory, targetArch) {
+  // node-pty ships native binaries for every supported operating system and
+  // CPU. A single-architecture release only needs one Darwin slice.
   const prebuilds = join(directory, 'node_modules', 'node-pty', 'prebuilds')
   for (const entry of await readdir(prebuilds, { withFileTypes: true })) {
-    if (entry.name === 'darwin-x64' || entry.name === 'darwin-arm64') continue
+    if (entry.name === `darwin-${targetArch}`) continue
     await rm(join(prebuilds, entry.name), { recursive: true, force: true })
   }
 }

@@ -3,7 +3,7 @@ import { readFile, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 const arch = process.argv[2] ?? process.arch
-if (!['arm64', 'x64', 'universal'].includes(arch)) {
+if (!['arm64', 'x64'].includes(arch)) {
   throw new Error(`Unsupported macOS architecture: ${arch}`)
 }
 
