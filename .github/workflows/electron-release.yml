@@ -37,7 +37,8 @@ jobs:
 
       - name: Verify tag version
         run: |
-          test "${GITHUB_REF_NAME#electron-v}" = "$(node -p \"require('./apps/electron/app/package.json').version\")"
+          version=$(node -p 'require("./apps/electron/app/package.json").version')
+          test "$GITHUB_REF_NAME" = "electron-v$version"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
