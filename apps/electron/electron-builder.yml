@@ -15,18 +15,13 @@ afterPack: scripts/copy-harness-runtime.mjs
 mac:
   category: public.app-category.developer-tools
   icon: ../desktop/Resources/icon.icns
-  hardenedRuntime: true
-  notarize: true
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
-  gatekeeperAssess: false
+  # This project distributes unsigned DMGs. Apple Developer signing and
+  # notarization are intentionally out of scope, so users install updates
+  # manually from GitHub Releases.
+  identity: null
+  hardenedRuntime: false
   target:
     - target: dmg
     - target: zip
 dmg:
   title: DeepSeek Harness
-publish:
-  - provider: github
-    owner: lucaslus
-    repo: deepseek-harness-desktop
-    releaseType: release

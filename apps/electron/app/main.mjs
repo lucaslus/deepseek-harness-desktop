@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { app, BrowserWindow, Menu, dialog } from 'electron'
+import { app, BrowserWindow, Menu, dialog, shell } from 'electron'
 
 const readinessPattern = /dsh web: (http:\/\/127\.0\.0\.1:\d+)/
 const desktopChromeScript = `
@@ -24,7 +24,7 @@ let mainWindow
 let hostOutput = ''
 let hostReady = false
 let quitting = false
-let autoUpdater
+const releasesURL = 'https://github.com/lucaslus/deepseek-harness-desktop/releases'
 
 function harnessDirectory() {
   return app.isPackaged
@@ -87,45 +87,15 @@ function stopHost() {
   host = undefined
 }
 
-async function getAutoUpdater() {
-  if (autoUpdater !== undefined) return autoUpdater
-  // electron-updater is CommonJS. Load it after the native window and Harness
-  // host are already starting, rather than putting updater initialization on
-  // the cold-start path.
-  const { default: updater } = await import('electron-updater')
-  autoUpdater = updater.autoUpdater
-  return autoUpdater
-}
-
-async function checkForUpdates() {
-  try {
-    const updater = await getAutoUpdater()
-    await updater.checkForUpdates()
-  } catch (error) {
-    console.error('Automatic update check failed:', error)
-  }
-}
-
-async function configureUpdates() {
-  if (!app.isPackaged) return
-  const updater = await getAutoUpdater()
-  updater.autoDownload = false
-  updater.on('update-available', async info => {
-    const { response } = await dialog.showMessageBox({
-      type: 'info', buttons: ['Download and Restart', 'Later'], defaultId: 0,
-      title: 'Update available', message: `DeepSeek Harness ${info.version} is available.`,
-    })
-    if (response === 0) void updater.downloadUpdate()
+async function openReleases() {
+  const { response } = await dialog.showMessageBox({
+    type: 'info',
+    buttons: ['Open GitHub Releases', 'Cancel'],
+    defaultId: 0,
+    title: 'Install updates manually',
+    message: 'Download the matching DMG from GitHub Releases, then replace the app in Applications.',
   })
-  updater.on('update-downloaded', async () => {
-    const { response } = await dialog.showMessageBox({
-      type: 'info', buttons: ['Restart now', 'Later'], defaultId: 0,
-      title: 'Update ready', message: 'The update has downloaded and is ready to install.',
-    })
-    if (response === 0) updater.quitAndInstall()
-  })
-  updater.on('error', error => console.error('Automatic update failed:', error))
-  void checkForUpdates()
+  if (response === 0) await shell.openExternal(releasesURL)
 }
 
 function createWindow() {
@@ -149,13 +119,12 @@ app.whenReady().then(() => {
   try {
     createWindow()
     startHost()
-    void configureUpdates()
     Menu.setApplicationMenu(Menu.buildFromTemplate([
       {
         label: 'DeepSeek Harness',
         submenu: [
           { role: 'about' }, { type: 'separator' },
-          { label: 'Check for Updates…', click: () => void checkForUpdates() },
+          { label: 'Check for Updates…', click: () => void openReleases() },
           { type: 'separator' }, { role: 'quit' },
         ],
       },

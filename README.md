@@ -5,15 +5,15 @@
 
 English | [中文](README.zh.md)
 
-DeepSeek Harness Desktop is a macOS desktop app for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It packages the upstream Web UI and its required Node runtime inside a signed native app, so end users can install it normally without cloning source code or configuring Node.js.
+DeepSeek Harness Desktop is a macOS desktop app for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It packages the upstream Web UI and its required Node runtime inside a native app, so end users can install it normally without cloning source code or configuring Node.js.
 
 ![DeepSeek Harness Desktop](docs/images/deepseek-harness-desktop-hero.png)
 
 ## Install on macOS
 
-Download the matching **DMG** from [GitHub Releases](https://github.com/lucaslus/deepseek-harness-desktop/releases): choose **arm64** for Apple Silicon (M-series) Macs or **x64** for Intel Macs. Open it, then drag **DeepSeek Harness** into **Applications**. Once installed, Spotlight, Finder, and the Dock can find it normally.
+Download the matching **DMG** from [GitHub Releases](https://github.com/lucaslus/deepseek-harness-desktop/releases): choose **arm64** for Apple Silicon (M-series) Macs or **x64** for Intel Macs. Open it, then drag **DeepSeek Harness** into **Applications**. Because this project does not use an Apple Developer certificate, macOS may require a first-time Control-click → **Open** confirmation. Once installed, Spotlight, Finder, and the Dock can find it normally.
 
-Use **Check for Updates…** in the app menu to look for a newer published release. The app only offers an update after a newer GitHub Release has been published with its signed ZIP and `latest-mac.yml` metadata.
+Use **Check for Updates…** in the app menu to open GitHub Releases, download the matching newer DMG, and replace the copy in Applications.
 
 ## Build a DMG yourself
 
@@ -29,16 +29,16 @@ node apps/electron/scripts/package-mac.mjs
 open "apps/electron/dist/release/DeepSeek Harness-0.0.1-$(node -p 'process.arch').dmg"
 ```
 
-The output folder also contains the ZIP used by automatic updates. A locally built application is unsigned; Gatekeeper warnings are expected unless you sign it with your own Apple Developer credentials.
+The output folder also contains a ZIP archive. All builds are unsigned; Gatekeeper warnings and the first-time Control-click → **Open** confirmation are expected.
 
 ## Release process
 
-The release workflow builds separate signed and notarized Apple Silicon and
-Intel installers. Update `apps/electron/app/package.json` to the release
-version, then push a matching `electron-v<version>` tag. GitHub Actions creates
-a **draft** GitHub Release with both DMGs, both update ZIPs, and
-`latest-mac.yml`. Review the draft and publish it when it is ready; only a
-published release is visible to the in-app updater.
+The release workflow builds separate unsigned Apple Silicon and Intel
+installers. Update `apps/electron/app/package.json` to the release version,
+then push a matching `electron-v<version>` tag. GitHub Actions creates a
+**draft** GitHub Release with both DMGs and ZIPs. Review the draft and publish
+it when it is ready. No GitHub Actions secrets or Apple Developer account are
+required.
 
 ## Upstream
 

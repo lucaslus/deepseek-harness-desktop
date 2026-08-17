@@ -18,14 +18,10 @@ function run(command, args, env = process.env) {
 
 await run(process.execPath, ['scripts/stage-runtime.mjs', arch])
 
-// A local build should remain quick and runnable without selecting an unrelated
-// Apple Development identity from the developer's keychain. Release CI supplies
-// CSC_LINK and therefore signs, hardens, and notarizes the same payload.
-const releaseEnvironment = process.env.CSC_LINK
-  ? process.env
-  : { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+// Public DMGs are intentionally unsigned. Disable keychain discovery so a
+// developer's unrelated local certificate never changes a release artifact.
+const releaseEnvironment = { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
 await run(join(electronDirectory, 'node_modules', '.bin', 'electron-builder'), [
   '--config', 'electron-builder.yml',
   '--mac', 'dmg', 'zip', `--${arch}`, '--publish', 'never',
 ], releaseEnvironment)
-await run(process.execPath, ['scripts/write-update-metadata.mjs', arch])
