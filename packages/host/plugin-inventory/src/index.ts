@@ -237,7 +237,7 @@ export class PluginInventoryGateway extends TypertRemoteService {
     }
     let removed = false
     if (manifest.dependencies !== undefined && manifest.dependencies[name] !== undefined) {
-      delete manifest.dependencies[name]
+      Reflect.deleteProperty(manifest.dependencies, name)
       removed = true
     }
     const bundles = manifest.dsh?.profile?.bundles

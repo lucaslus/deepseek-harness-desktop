@@ -13,7 +13,7 @@ import type {
 } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import type { ClientRemote } from '../src/client/index.ts'
-import { apply, inject } from '../src/client/index.ts'
+import { apply, inject, kInstallScoped } from '../src/client/index.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Events {
@@ -371,7 +371,7 @@ describe('Client Typert API', () => {
     })).rejects.toThrow('scoped method probe/rename is already mounted')
     await expect(ctx.remote.$mount({
       package: '@fixture/service-method-conflict',
-      descriptors: [{ ...context, id: '@fixture/probe#probe/remove', method: 'remove' }],
+      descriptors: [{ ...context, id: '@fixture/probe#probe/name', method: 'name' }],
     })).rejects.toThrow('conflicts with its namespace service')
     const scopedService = ctx.get('remote.probe') as unknown as object
     Object.defineProperty(scopedService, 'custom', { configurable: true, value: () => undefined })
@@ -402,6 +402,36 @@ describe('Client Typert API', () => {
       expect.any(AbortSignal),
     )
     await disposeMultipleScoped()
+  })
+
+  it('mounts methods named install, remove, has, and empty without namespace conflict', async () => {
+    const call = vi.fn<ConnectionHandle['rpc']['call']>()
+      .mockResolvedValue({ ok: true, value: { ref: 'done' } })
+    const ctx = await bench(call)
+    const { scope: _scope, ...base } = directDescriptor()
+    const descriptors: InvocationDescriptor[] = [
+      { ...base, id: '@fixture/probe#probe/install', method: 'install' },
+      { ...base, id: '@fixture/probe#probe/remove', method: 'remove' },
+      { ...base, id: '@fixture/probe#probe/has', method: 'has' },
+      { ...base, id: '@fixture/probe#probe/empty', method: 'empty' },
+    ]
+    const dispose = await ctx.remote.$mount({ package: '@fixture/reserved-name-like', descriptors })
+    interface ProbeLike {
+      install: (agentId: string, req: { objective: string }) => Promise<RemoteResult<{ ref: string }>>
+      remove: unknown
+      has: unknown
+      empty: unknown
+    }
+    const probe = ctx.remote.probe as unknown as ProbeLike
+    expect(probe.install).toBeTypeOf('function')
+    expect(probe.remove).toBeTypeOf('function')
+    expect(probe.has).toBeTypeOf('function')
+    expect(probe.empty).toBeTypeOf('function')
+
+    await expect(probe.install('agent-1', { objective: 'install-obj' }))
+      .resolves.toEqual({ ok: true, value: { ref: 'done' } })
+    await dispose()
+    expect((ctx.remote as unknown as Record<string, unknown>).probe).toBeUndefined()
   })
 
   it('rolls back earlier descriptors when a later descriptor fails to install', async () => {
@@ -439,10 +469,10 @@ describe('Client Typert API', () => {
       descriptors: [contextDescriptor()],
     })
     const namespace = ctx.get('remote.probe') as unknown as {
-      installScoped: (...args: unknown[]) => void
+      [kInstallScoped]: (...args: unknown[]) => void
       readonly create?: unknown
     }
-    const installScoped = vi.spyOn(namespace, 'installScoped').mockImplementation(() => {
+    const installScoped = vi.spyOn(namespace, kInstallScoped).mockImplementation(() => {
       throw new Error('fixture scoped projection failure')
     })
     try {

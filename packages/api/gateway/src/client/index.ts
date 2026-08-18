@@ -206,7 +206,7 @@ class ClientRemoteService extends Service implements TypertClientRemote {
       methods.add(descriptor.method)
       table.set(descriptor.namespace, methods)
       const namespace = this.namespaces.get(descriptor.namespace)?.service
-      if (namespace?.has(kind, descriptor.method) === true) {
+      if (namespace?.[kHas](kind, descriptor.method) === true) {
         throw new Error(`client api: ${kind} method ${endpointOf(descriptor)} is already mounted`)
       }
     }
@@ -230,7 +230,7 @@ class ClientRemoteService extends Service implements TypertClientRemote {
       }
       for (const method of new Set([...(direct.get(namespace) ?? []), ...(scoped.get(namespace) ?? [])])) {
         if (service === undefined) RemoteNamespaceService.assertMethodAvailable(namespace, method)
-        else service.assertMethodAvailable(method)
+        else service[kAssertMethodAvailable](method)
       }
     }
   }
@@ -262,13 +262,13 @@ class ClientRemoteService extends Service implements TypertClientRemote {
   private async installDirect(descriptor: InvocationDescriptor, token: MountToken): Promise<TypertDisposer> {
     const namespace = await this.namespace(descriptor.namespace)
     try {
-      namespace.service.installDirect(descriptor, token)
+      namespace.service[kInstallDirect](descriptor, token)
     } catch (error) {
       await this.disposeNamespace(descriptor.namespace, namespace)
       throw error
     }
     return async () => {
-      namespace.service.remove('direct', descriptor.method, token)
+      namespace.service[kRemove]('direct', descriptor.method, token)
       await this.disposeNamespace(descriptor.namespace, namespace)
     }
   }
@@ -280,13 +280,13 @@ class ClientRemoteService extends Service implements TypertClientRemote {
   ): Promise<TypertDisposer> {
     const namespace = await this.namespace(descriptor.namespace)
     try {
-      namespace.service.installScoped(descriptor, projection, token)
+      namespace.service[kInstallScoped](descriptor, projection, token)
     } catch (error) {
       await this.disposeNamespace(descriptor.namespace, namespace)
       throw error
     }
     return async () => {
-      namespace.service.remove('scoped', descriptor.method, token)
+      namespace.service[kRemove]('scoped', descriptor.method, token)
       await this.disposeNamespace(descriptor.namespace, namespace)
     }
   }
@@ -319,7 +319,7 @@ class ClientRemoteService extends Service implements TypertClientRemote {
   }
 
   private async disposeNamespace(name: string, namespace: RemoteNamespaceHandle): Promise<void> {
-    if (!namespace.service.empty || this.namespaces.get(name) !== namespace) return
+    if (!namespace.service[kEmpty] || this.namespaces.get(name) !== namespace) return
     this.namespaces.delete(name)
     await namespace.dispose()
   }
@@ -422,12 +422,27 @@ type InvokeRemote = (
   args: readonly unknown[],
 ) => Promise<RemoteResult<unknown>>
 
+const kMethods = Symbol('remote.methods')
+const kNamespace = Symbol('remote.namespace')
+const kInvokeRemote = Symbol('remote.invokeRemote')
+const kEmpty = Symbol('remote.empty')
+const kHas = Symbol('remote.has')
+const kInstallDirect = Symbol('remote.installDirect')
+/** Internal symbol for installing scoped projections; used by same-package tests. */
+export const kInstallScoped = Symbol('remote.installScoped')
+const kRemove = Symbol('remote.remove')
+const kAssertMethodAvailable = Symbol('remote.assertMethodAvailable')
+const kInstall = Symbol('remote.install')
+
+const REMOTE_NAMESPACE_RESERVED_FIELDS = new Set(['constructor', 'ctx', 'name'])
+
 class RemoteNamespaceService extends Service {
-  private readonly methods = new Map<string, RemoteMethodRecord>()
-  private readonly namespace: string
+  private readonly [kMethods] = new Map<string, RemoteMethodRecord>()
+  private readonly [kNamespace]: string
+  private readonly [kInvokeRemote]: InvokeRemote
 
   static assertMethodAvailable(namespace: string, method: string): void {
-    if (REMOTE_NAMESPACE_FIELDS.has(method) || method in RemoteNamespaceService.prototype) {
+    if (REMOTE_NAMESPACE_RESERVED_FIELDS.has(method) || method in Service.prototype) {
       throw new Error(`client api: method ${JSON.stringify(`${namespace}/${method}`)} conflicts with its namespace service`)
     }
   }
@@ -435,40 +450,41 @@ class RemoteNamespaceService extends Service {
   constructor(
     ctx: Context,
     name: string,
-    private readonly invokeRemote: InvokeRemote,
+    invokeRemote: InvokeRemote,
   ) {
     super(ctx, remoteServiceKey(name))
-    this.namespace = name
+    this[kNamespace] = name
+    this[kInvokeRemote] = invokeRemote
   }
 
-  assertMethodAvailable(method: string): void {
-    RemoteNamespaceService.assertMethodAvailable(this.namespace, method)
-    if (method in this && !this.methods.has(method)) {
-      throw new Error(`client api: method ${JSON.stringify(`${this.namespace}/${method}`)} conflicts with its namespace service`)
+  [kAssertMethodAvailable](method: string): void {
+    RemoteNamespaceService.assertMethodAvailable(this[kNamespace], method)
+    if (method in this && !this[kMethods].has(method)) {
+      throw new Error(`client api: method ${JSON.stringify(`${this[kNamespace]}/${method}`)} conflicts with its namespace service`)
     }
   }
 
-  get empty(): boolean {
-    return this.methods.size === 0
+  get [kEmpty](): boolean {
+    return this[kMethods].size === 0
   }
 
-  has(kind: 'direct' | 'scoped', method: string): boolean {
-    return this.methods.get(method)?.[kind] !== undefined
+  [kHas](kind: 'direct' | 'scoped', method: string): boolean {
+    return this[kMethods].get(method)?.[kind] !== undefined
   }
 
-  installDirect(descriptor: InvocationDescriptor, token: MountToken): void {
-    this.install(descriptor.method, 'direct', { descriptor, token })
+  [kInstallDirect](descriptor: InvocationDescriptor, token: MountToken): void {
+    this[kInstall](descriptor.method, 'direct', { descriptor, token })
   }
 
-  installScoped(descriptor: InvocationDescriptor, projection: ScopedProjection, token: MountToken): void {
-    this.install(descriptor.method, 'scoped', { descriptor, projection, token })
+  [kInstallScoped](descriptor: InvocationDescriptor, projection: ScopedProjection, token: MountToken): void {
+    this[kInstall](descriptor.method, 'scoped', { descriptor, projection, token })
   }
 
-  private install(method: string, kind: 'direct', value: DirectMethod): void
-  private install(method: string, kind: 'scoped', value: ScopedMethod): void
-  private install(method: string, kind: 'direct' | 'scoped', value: DirectMethod | ScopedMethod): void {
-    this.assertMethodAvailable(method)
-    let record = this.methods.get(method)
+  private [kInstall](method: string, kind: 'direct', value: DirectMethod): void
+  private [kInstall](method: string, kind: 'scoped', value: ScopedMethod): void
+  private [kInstall](method: string, kind: 'direct' | 'scoped', value: DirectMethod | ScopedMethod): void {
+    this[kAssertMethodAvailable](method)
+    let record = this[kMethods].get(method)
     const fresh = record === undefined
     record ??= {}
     if (fresh) {
@@ -477,34 +493,32 @@ class RemoteNamespaceService extends Service {
         enumerable: true,
         get: function (this: RemoteNamespaceService): (...args: unknown[]) => Promise<RemoteResult<unknown>> {
           const callerCtx = this.ctx
-          const current = this.methods.get(method)
+          const current = this[kMethods].get(method)
           const direct = current?.direct
           const scoped = current?.scoped
           return (...args: unknown[]) => {
-            return this.invokeRemote(direct, scoped, callerCtx, args)
+            return this[kInvokeRemote](direct, scoped, callerCtx, args)
           }
         },
       })
-      this.methods.set(method, record)
+      this[kMethods].set(method, record)
     }
     if (kind === 'direct') record.direct = value
     else record.scoped = value as ScopedMethod
   }
 
-  remove(kind: 'direct' | 'scoped', method: string, token: MountToken): void {
-    const record = this.methods.get(method)
+  [kRemove](kind: 'direct' | 'scoped', method: string, token: MountToken): void {
+    const record = this[kMethods].get(method)
     const current = record?.[kind]
     /* v8 ignore next -- duplicate live variants are rejected before installation, so no newer token can replace this one. */
     if (record === undefined || current?.token !== token) return
     if (kind === 'direct') delete record.direct
     else delete record.scoped
     if (record.direct !== undefined || record.scoped !== undefined) return
-    this.methods.delete(method)
+    this[kMethods].delete(method)
     Reflect.deleteProperty(this, method)
   }
 }
-
-const REMOTE_NAMESPACE_FIELDS = new Set(['ctx', 'empty', 'invokeRemote', 'methods', 'name', 'namespace'])
 
 function remoteServiceKey(namespace: string): string {
   return `remote.${namespace}`

@@ -47,7 +47,7 @@ installer; users update by downloading a newer matching DMG from GitHub
 Releases and replacing the application in Applications.
 
 Before tagging, set `apps/electron/app/package.json` to the same semantic
-version as the tag; for example, version `0.0.2` is released with
-`electron-v0.0.2`. The workflow rejects mismatches so a release tag always
+version as the tag; for example, version `0.0.3` is released with
+`electron-v0.0.3`. The workflow rejects mismatches so a release tag always
 identifies its package contents. No GitHub Actions secrets or Apple Developer
 account are required. Gatekeeper warnings are expected for every installer.

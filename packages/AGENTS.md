@@ -15,6 +15,8 @@ These package-specific rules supplement the repo-wide [conventions](../AGENTS.md
 - **Publish state only at its commit point.** Emit each notification and update derived state only after the operation succeeds; derive caches, prompts, UI echoes, replay, and query views from one authoritative source.
 - **Apply bounds to the complete result.** Enforce byte, token, item, and time limits where the complete emitted or retained value, including wrappers and metadata, is known; test tiny and exact limits, oversized single chunks, and multibyte byte limits.
 - **Registry contributions prove disposal** through the HMR-safety test required by [testing policy](../docs/testing.md): dispose the fiber and observe removal.
+- **Dynamic namespace services isolate internal members with Symbols.** Classes hosting user- or plugin-contributed methods (such as Remote RPC namespaces) must use `Symbol` keys for internal methods and properties. Reserved-field validation restricts only Cordis engine members (`constructor`, `ctx`, `name`), keeping business method names unconstrained.
+- **Isolate environment state in persistence tests.** Tests touching profile config or filesystem paths (`DSH_HOME` / `dshHomePath`) must redirect variables to temporary directories and clean them up upon exit.
 - **Every package owns `./invariant`.** Register the manifest name; check an event/data relation or give empty installers package-specific `No runtime invariant:` reasons. Generated companions, unexplained empties, and ignored reporters fail [`verify-package-invariants`](../.agents/notes/implemented/architecture/2026-07-19-package-invariant-runtime-contracts.md).
 
 [Naming rules](../docs/cookbook/adding-a-package.md#name-the-role-that-exists):

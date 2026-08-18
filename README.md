@@ -44,7 +44,7 @@ corepack enable
 pnpm install --frozen-lockfile
 pnpm run build
 node apps/electron/scripts/package-mac.mjs
-open "apps/electron/dist/release/DeepSeek Harness-0.0.2-$(node -p 'process.arch').dmg"
+open "apps/electron/dist/release/DeepSeek Harness-0.0.3-$(node -p 'process.arch').dmg"
 ```
 
 The output folder also contains a ZIP archive. All builds are unsigned; Gatekeeper warnings and the first-time Control-click → **Open** confirmation are expected.

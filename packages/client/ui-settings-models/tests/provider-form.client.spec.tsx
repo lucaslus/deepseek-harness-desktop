@@ -720,9 +720,7 @@ describe('hand-declared providers', () => {
     fireEvent.click(screen.getByText(en.create))
 
     await waitFor(() => { expect(onClose).toHaveBeenCalledWith(true) })
-    expect(firstMutate(mutate).ops[0]).toMatchObject({
-      value: expect.objectContaining({ brandIcon: 'moonshotai' }),
-    })
+    expect(firstMutate(mutate).ops[0]?.value).toMatchObject({ brandIcon: 'moonshotai' })
   })
 
   it('scopes each card to fields a provider can actually own', async () => {
