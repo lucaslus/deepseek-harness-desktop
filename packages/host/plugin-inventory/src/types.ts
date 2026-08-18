@@ -26,3 +26,20 @@ export interface PluginInventoryEntry {
 export interface PluginInventorySnapshot {
   readonly entries: readonly PluginInventoryEntry[]
 }
+
+/**
+ * Result of one plugin install/remove operation. `ok: true` carries the
+ * package name and the restart requirement; failures carry a machine-readable
+ * `error` code plus a human-readable `message`.
+ */
+export interface PluginManagerResult {
+  readonly ok: boolean
+  /** Affected package name (present on success). */
+  readonly name?: string
+  /** True when the profile must restart before the change loads. */
+  readonly restartRequired?: boolean
+  /** Machine-readable failure code (`not-a-bundle`, `missing-manifest`, …). */
+  readonly error?: string
+  /** Human-readable failure detail. */
+  readonly message?: string
+}

@@ -9,7 +9,7 @@ import messageFeedbackRemote from '@deepseek-ai/dsh-message-feedback/remote'
 import type { TypertClientRemote } from '@deepseek-ai/dsh-typert-protocol'
 
 export type { TypertClientRemote as ClientRemote } from '@deepseek-ai/dsh-typert-protocol'
-export type { PluginInventorySnapshot } from '@deepseek-ai/dsh-host-plugin-inventory/types'
+export type { PluginInventorySnapshot, PluginManagerResult } from '@deepseek-ai/dsh-host-plugin-inventory/types'
 export type {} from '@deepseek-ai/dsh-commands/remote'
 export type {} from '@deepseek-ai/dsh-goal/remote'
 export type {} from '@deepseek-ai/dsh-host-plugin-inventory/remote'

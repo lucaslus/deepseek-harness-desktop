@@ -277,3 +277,113 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.installer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--dsw-alias-bg-layer-3);
+}
+
+.installer h3 {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.installRow {
+  display: flex;
+  gap: 8px;
+}
+
+.installRow input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  padding: 0 12px;
+  outline: none;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+}
+
+.installRow input::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.installRow input:focus-visible {
+  border-color: var(--dsw-alias-state-business-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent);
+}
+
+.installRow button {
+  flex: none;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.installRow button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.installerError {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.installerDone {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.installerHint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.cardActions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.removeButton {
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.removeButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.removeButton:hover:not(:disabled) {
+  color: var(--dsw-alias-state-error-primary);
+  border-color: var(--dsw-alias-state-error-primary);
+}

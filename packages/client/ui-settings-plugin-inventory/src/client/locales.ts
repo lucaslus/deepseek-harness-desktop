@@ -20,6 +20,16 @@ export const zh = {
   active: '已挂载',
   failed: '挂载失败',
   unloading: '卸载中',
+  installTitle: '安装插件',
+  installPlaceholder: '插件目录路径 或 github:owner/repo',
+  install: '安装',
+  installing: '正在安装…',
+  installError: '安装失败',
+  installDone: '已安装 {name}，重启客户端后生效',
+  remove: '卸载',
+  removing: '正在卸载…',
+  removeError: '卸载失败',
+  removeDone: '已卸载 {name}，重启客户端后生效',
 } satisfies Record<string, string>
 
 /** Plugin inventory locale key union. */
@@ -45,4 +55,14 @@ export const en = {
   active: 'Mounted',
   failed: 'Mount failed',
   unloading: 'Unloading',
+  installTitle: 'Install plugin',
+  installPlaceholder: 'Plugin directory path or github:owner/repo',
+  install: 'Install',
+  installing: 'Installing…',
+  installError: 'Install failed',
+  installDone: 'Installed {name}. Restart the client to load it.',
+  remove: 'Remove',
+  removing: 'Removing…',
+  removeError: 'Remove failed',
+  removeDone: 'Removed {name}. Restart the client to apply.',
 } satisfies Record<PluginInventoryLocaleKey, string>
