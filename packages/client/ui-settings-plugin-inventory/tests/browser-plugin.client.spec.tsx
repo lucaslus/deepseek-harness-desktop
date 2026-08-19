@@ -8,6 +8,7 @@ import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import { usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
 import { apply, inject, NS } from '../src/client/index.ts'
 import { PluginInventorySettingsTab } from '../src/client/PluginInventorySettingsTab.tsx'
+import { PluginInstallSettingsTab } from '../src/client/PluginInstallSettingsTab.tsx'
 import type { PluginInventorySettingsTabInjected } from '../src/client/PluginInventorySettingsTab.tsx'
 
 usePinnedBrowserLanguages('zh-CN')
@@ -32,6 +33,9 @@ async function bench() {
   const list = vi.fn<() => Promise<ListResult>>()
     .mockResolvedValue({ ok: true, value: EMPTY })
   ctx.provide('remote.pluginInventory', { list })
+  const cliStatus = vi.fn().mockResolvedValue({ ok: true, value: { supported: false } })
+  const installCli = vi.fn()
+  ctx.provide('remote.cliInstall', { status: cliStatus, install: installCli })
   return { ctx, slots: ctx.get('slots') as SlotRegistry, locale, list }
 }
 
@@ -44,7 +48,7 @@ function declare(slots: SlotRegistry): () => void {
 
 describe('ui-settings-plugin-inventory browser plugin', () => {
   it('declares only the services used by the Settings Remote contribution', () => {
-    expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.pluginInventory'])
+    expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.pluginInventory', 'remote.cliInstall'])
   })
 
   it('registers a localized tab without reading the Remote eagerly', async () => {
@@ -64,6 +68,12 @@ describe('ui-settings-plugin-inventory browser plugin', () => {
     expect(b.list).toHaveBeenCalledOnce()
     b.list.mockResolvedValueOnce({ ok: false, error: { code: 'REMOTE_ERROR', message: 'unavailable' } })
     await expect(injected.list()).rejects.toThrow('pluginInventory.list failed: REMOTE_ERROR: unavailable')
+
+    const installEntry = b.slots.entries('settings.plugins.tab')[1]!
+    expect(installEntry.component).toBe(PluginInstallSettingsTab)
+    expect(installEntry.options).toMatchObject({ id: 'install', order: 11 })
+    expect(resolveSlotLabel(installEntry.options.label)).toBe('安装插件')
+
     await b.ctx.fiber.dispose()
   })
 
@@ -74,9 +84,10 @@ describe('ui-settings-plugin-inventory browser plugin', () => {
     expect(b.slots.entries('settings.plugins.tab')).toHaveLength(0)
 
     const stop = declare(b.slots)
-    await vi.waitFor(() => { expect(b.slots.entries('settings.plugins.tab')).toHaveLength(1) })
+    await vi.waitFor(() => { expect(b.slots.entries('settings.plugins.tab')).toHaveLength(2) })
     b.locale.setLocale('en')
     expect(resolveSlotLabel(b.slots.entries('settings.plugins.tab')[0]!.options.label)).toBe('Plugin list')
+    expect(resolveSlotLabel(b.slots.entries('settings.plugins.tab')[1]!.options.label)).toBe('Install')
 
     stop()
     expect(b.slots.entries('settings.plugins.tab')).toHaveLength(0)

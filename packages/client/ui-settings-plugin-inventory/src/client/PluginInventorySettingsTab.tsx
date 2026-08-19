@@ -8,12 +8,10 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 import type { PluginInventoryLocaleKey } from './locales.ts'
 import css from './PluginInventorySettingsTab.module.css'
 
-/** Registration-side Remote face used by the section. */
+/** Registration-side Remote face used by the plugin-list tab. */
 export interface PluginInventorySettingsTabInjected {
   /** Read a current Host inventory snapshot. */
   list: () => Promise<PluginInventorySnapshot>
-  /** Install a plugin bundle into the active profile from a path or GitHub source. */
-  install: (source: string) => Promise<PluginManagerResult>
   /** Remove an installed plugin bundle by package name. */
   remove: (name: string) => Promise<PluginManagerResult>
 }
@@ -31,6 +29,12 @@ type ViewState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
   | { readonly status: 'ready'; readonly snapshot: PluginInventorySnapshot }
+
+/** Remove-operation notice shown above the catalog. */
+type RemoveNotice =
+  | { readonly kind: 'working' }
+  | { readonly kind: 'error'; readonly message: string }
+  | { readonly kind: 'done'; readonly message: string }
 
 const PHASE_KEYS = {
   pending: 'pending',
@@ -64,21 +68,14 @@ function matches(entry: PluginInventoryEntry, normalizedQuery: string): boolean 
     .some(value => value.toLocaleLowerCase().includes(normalizedQuery))
 }
 
-/** Install/remove operation notice shown above the catalog. */
-type InstallerNotice =
-  | { readonly kind: 'working'; readonly what: 'install' | 'remove' }
-  | { readonly kind: 'error'; readonly what: 'install' | 'remove'; readonly message: string }
-  | { readonly kind: 'done'; readonly message: string }
-
-/** Render the current Loader inventory plus profile-level install/remove. */
-export function PluginInventorySettingsTab({ list, install, remove, t }: PluginInventorySettingsTabProps): ReactNode {
+/** Render the current Loader inventory with per-plugin removal. */
+export function PluginInventorySettingsTab({ list, remove, t }: PluginInventorySettingsTabProps): ReactNode {
   const catalogId = useId()
   const [request, setRequest] = useState(0)
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState<PluginInventoryEntry['entryId'] | null>(null)
   const [state, setState] = useState<ViewState>({ status: 'loading' })
-  const [source, setSource] = useState('')
-  const [notice, setNotice] = useState<InstallerNotice | null>(null)
+  const [notice, setNotice] = useState<RemoveNotice | null>(null)
 
   useEffect(() => {
     let current = true
@@ -108,72 +105,33 @@ export function PluginInventorySettingsTab({ list, install, remove, t }: PluginI
     setRequest(value => value + 1)
   }
 
-  const runInstall = async (): Promise<void> => {
-    const trimmed = source.trim()
-    if (trimmed.length === 0 || notice?.kind === 'working') return
-    setNotice({ kind: 'working', what: 'install' })
-    try {
-      const result = await install(trimmed)
-      if (!result.ok) {
-        const detail = result.message === undefined ? '' : `: ${result.message}`
-        setNotice({ kind: 'error', what: 'install', message: `${result.error ?? ''}${detail}` })
-      } else {
-        setNotice({ kind: 'done', message: t('installDone', { name: result.name ?? trimmed }) })
-        setSource('')
-      }
-    } catch (error) {
-      setNotice({ kind: 'error', what: 'install', message: error instanceof Error ? error.message : String(error) })
-    }
-  }
-
   const runRemove = async (name: string): Promise<void> => {
     if (notice?.kind === 'working') return
-    setNotice({ kind: 'working', what: 'remove' })
+    setNotice({ kind: 'working' })
     try {
       const result = await remove(name)
       if (!result.ok) {
         const detail = result.message === undefined ? '' : `: ${result.message}`
-        setNotice({ kind: 'error', what: 'remove', message: `${result.error ?? ''}${detail}` })
+        setNotice({ kind: 'error', message: `${result.error ?? ''}${detail}` })
       } else {
         setNotice({ kind: 'done', message: t('removeDone', { name }) })
       }
     } catch (error) {
-      setNotice({ kind: 'error', what: 'remove', message: error instanceof Error ? error.message : String(error) })
+      setNotice({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
     }
   }
 
   return (
     <div className={css.section} aria-busy={state.status === 'loading'}>
-      <div className={css.installer}>
-        <h3>{t('installTitle')}</h3>
-        <div className={css.installRow}>
-          <input
-            type="text"
-            value={source}
-            placeholder={t('installPlaceholder')}
-            aria-label={t('installTitle')}
-            disabled={notice?.kind === 'working'}
-            onChange={(event) => { setSource(event.currentTarget.value) }}
-            onKeyDown={(event) => { if (event.key === 'Enter') void runInstall() }}
-          />
-          <button
-            type="button"
-            disabled={notice?.kind === 'working' || source.trim().length === 0}
-            onClick={() => void runInstall()}
-          >
-            {notice?.kind === 'working' && notice.what === 'install' ? t('installing') : t('install')}
-          </button>
-        </div>
-        {notice !== null && notice.kind === 'error'
-          ? <p className={css.installerError} role="alert">{t(notice.what === 'install' ? 'installError' : 'removeError')}: {notice.message}</p>
-          : null}
-        {notice !== null && notice.kind === 'done'
-          ? <p className={css.installerDone}>{notice.message}</p>
-          : null}
-        {notice !== null && notice.kind === 'working'
-          ? <p className={css.installerHint}>{t(notice.what === 'install' ? 'installing' : 'removing')}</p>
-          : null}
-      </div>
+      {notice !== null && notice.kind === 'error'
+        ? <p className={css.installerError} role="alert">{t('removeError')}: {notice.message}</p>
+        : null}
+      {notice !== null && notice.kind === 'done'
+        ? <p className={css.installerDone}>{notice.message}</p>
+        : null}
+      {notice !== null && notice.kind === 'working'
+        ? <p className={css.installerHint}>{t('removing')}</p>
+        : null}
       {state.status === 'loading' ? <p className={css.status}>{t('loading')}</p> : null}
       {state.status === 'error' ? (
         <div className={css.failure}>
@@ -266,7 +224,7 @@ export function PluginInventorySettingsTab({ list, install, remove, t }: PluginI
                             disabled={notice?.kind === 'working'}
                             onClick={() => void runRemove(entry.moduleName)}
                           >
-                            {notice?.kind === 'working' && notice.what === 'remove' ? t('removing') : t('remove')}
+                            {notice?.kind === 'working' ? t('removing') : t('remove')}
                           </button>
                         </div>
                       </div>

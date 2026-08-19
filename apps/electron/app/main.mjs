@@ -79,6 +79,8 @@ function startHost() {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
       NODE_ENV: development ? 'development' : 'production',
+      DSH_ELECTRON_BINARY: process.execPath,
+      DSH_HARNESS_BIN_ENTRY: entry,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })

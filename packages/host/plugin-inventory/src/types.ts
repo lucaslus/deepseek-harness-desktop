@@ -43,3 +43,15 @@ export interface PluginManagerResult {
   /** Human-readable failure detail. */
   readonly message?: string
 }
+
+export interface CliInstallStatus {
+  readonly supported: boolean
+  readonly installed: boolean
+  readonly path?: string
+}
+
+export interface CliInstallResult {
+  readonly ok: boolean
+  readonly reason?: string
+  readonly path?: string
+}

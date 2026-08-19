@@ -188,4 +188,106 @@ describe('ModelSelect reasoning effort', () => {
     expect(screen.queryByRole('button')).toBeNull()
     expect(load).not.toHaveBeenCalled()
   })
+
+  it('filters models via search input and allows clearing search', () => {
+    const groups = [
+      {
+        id: 'deepseek-official',
+        name: 'DeepSeek',
+        models: [
+          { id: 'deepseek-v4-flash', name: 'DeepSeek-V4-Flash' },
+          { id: 'deepseek-v4-pro', name: 'DeepSeek-V4-Pro' },
+        ],
+      },
+      {
+        id: 'openrouter',
+        name: 'OpenRouter',
+        models: [
+          { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet' },
+          { id: 'gpt-4o', name: 'GPT-4o' },
+        ],
+      },
+    ]
+    const directory = createSnapshotStore<ModelDirectoryState>(state({ groups }))
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: /选择模型/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+
+    const searchInput = screen.getByRole('textbox', { name: '搜索模型' })
+    expect(searchInput).toBeTruthy()
+
+    // Initially all 4 models are rendered
+    expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeTruthy()
+    expect(screen.getByRole('menuitemradio', { name: 'Claude 3.5 Sonnet' })).toBeTruthy()
+
+    // Filter by model name
+    fireEvent.change(searchInput, { target: { value: 'claude' } })
+    expect(screen.queryByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeNull()
+    expect(screen.getByRole('menuitemradio', { name: 'Claude 3.5 Sonnet' })).toBeTruthy()
+
+    // Filter by provider name
+    fireEvent.change(searchInput, { target: { value: 'deepseek' } })
+    expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeTruthy()
+    expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Pro' })).toBeTruthy()
+    expect(screen.queryByRole('menuitemradio', { name: 'Claude 3.5 Sonnet' })).toBeNull()
+
+    // Non-matching search shows empty state
+    fireEvent.change(searchInput, { target: { value: 'nonexistent-model' } })
+    expect(screen.getByText('未找到匹配的模型。')).toBeTruthy()
+
+    // Clear search button restores full list
+    const clearButton = screen.getByRole('button', { name: '清除搜索' })
+    fireEvent.click(clearButton)
+    expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeTruthy()
+    expect(screen.getByRole('menuitemradio', { name: 'Claude 3.5 Sonnet' })).toBeTruthy()
+  })
+
+  it('lazily renders models in batches and loads more on scroll', () => {
+    const models = Array.from({ length: 100 }, (_, i) => ({
+      id: `model-${i}`,
+      name: `Model ${i}`,
+    }))
+    const groups = [{
+      id: 'large-provider',
+      name: 'Large Provider',
+      models,
+    }]
+    const directory = createSnapshotStore<ModelDirectoryState>(state({ groups }))
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: /选择模型/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+
+    // Initial batch is 40 items
+    const initialItems = screen.getAllByRole('menuitemradio')
+    expect(initialItems.length).toBe(40)
+
+    // Simulate scrolling container to bottom
+    const scrollContainer = initialItems[0]?.closest('.scrollable')
+    expect(scrollContainer).not.toBeNull()
+    if (scrollContainer) {
+      Object.defineProperty(scrollContainer, 'scrollTop', { value: 500, configurable: true })
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 800, configurable: true })
+      Object.defineProperty(scrollContainer, 'clientHeight', { value: 300, configurable: true })
+      fireEvent.scroll(scrollContainer)
+    }
+
+    // Next batch loaded: 40 + 40 = 80 items
+    expect(screen.getAllByRole('menuitemradio').length).toBe(80)
+  })
 })

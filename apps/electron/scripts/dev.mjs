@@ -33,10 +33,15 @@ function onceExit(child, name) {
 }
 
 function startElectron() {
+  // ELECTRON_RUN_AS_NODE would make the Electron binary run as plain Node (the
+  // dev runner may itself be launched through a Node wrapper that sets it),
+  // so strip it from the child environment to guarantee a real Electron window.
+  const env = { ...process.env, DSH_ELECTRON_DEV: '1' }
+  delete env.ELECTRON_RUN_AS_NODE
   electron = spawn(electronBinary, ['app'], {
     cwd: electronDirectory,
     stdio: 'inherit',
-    env: { ...process.env, DSH_ELECTRON_DEV: '1' },
+    env,
   })
   electron.once('exit', code => {
     electron = undefined

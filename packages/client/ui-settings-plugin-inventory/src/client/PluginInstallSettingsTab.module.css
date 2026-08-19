@@ -1,0 +1,86 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 760px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.intro {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.description {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.codeBlock {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-3);
+  font-family: var(--ds-font-family-code);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.codeBlock code {
+  font-family: inherit;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+  font-style: italic;
+}
+
+.cliAction {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 12px;
+}
+
+.successMessage {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-text-success);
+}
+
+.successMessage code {
+  color: var(--dsw-alias-text-primary);
+  background: var(--dsw-alias-bg-layer-3);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.errorMessage {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-text-danger);
+}

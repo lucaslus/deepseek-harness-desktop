@@ -28,6 +28,8 @@ import type {
   PluginInventoryEntry,
   PluginInventorySnapshot,
   PluginManagerResult,
+  CliInstallStatus,
+  CliInstallResult,
 } from './types.ts'
 
 export type * from './types.ts'
@@ -90,6 +92,7 @@ export class PluginInventoryGateway extends TypertRemoteService {
 
   constructor(ctx: Context) {
     super(ctx, 'pluginInventory')
+    ctx.plugin(CliInstallGateway)
   }
 
   /**
@@ -253,6 +256,61 @@ export class PluginInventoryGateway extends TypertRemoteService {
       await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
     }
     await rm(join(dir, 'node_modules', name), { recursive: true, force: true })
+  }
+}
+
+function expandHomedir(pathStr: string): string {
+  if (pathStr.startsWith('~/')) {
+    return join(process.env.HOME || '', pathStr.slice(2))
+  }
+  return pathStr
+}
+
+export class CliInstallGateway extends TypertRemoteService {
+  constructor(ctx: Context) {
+    super(ctx, 'cliInstall')
+  }
+
+  @Remote('install')
+  async install(request: { dir?: string }): Promise<CliInstallResult> {
+    const electronBinary = process.env.DSH_ELECTRON_BINARY
+    const binEntry = process.env.DSH_HARNESS_BIN_ENTRY
+    if (!electronBinary || !binEntry) {
+      return { ok: false, reason: 'not-electron' }
+    }
+
+    const dir = request.dir ? expandHomedir(request.dir) : expandHomedir('~/.local/bin')
+    const targetPath = join(dir, 'dsh')
+
+    try {
+      if (!existsSync(dir)) {
+        await mkdir(dir, { recursive: true })
+      }
+
+      const script = `#!/bin/sh
+# dsh CLI — installed by DeepSeek Harness. Re-install if you move the app.
+ELECTRON_RUN_AS_NODE=1 exec "${electronBinary}" "${binEntry}" "$@"
+`
+      await writeFile(targetPath, script, { mode: 0o755 })
+      return { ok: true, path: targetPath }
+    } catch (e) {
+      return { ok: false, reason: String(e) }
+    }
+  }
+
+  @Remote('status')
+  async status(): Promise<CliInstallStatus> {
+    const electronBinary = process.env.DSH_ELECTRON_BINARY
+    const binEntry = process.env.DSH_HARNESS_BIN_ENTRY
+    if (!electronBinary || !binEntry) {
+      return { supported: false, installed: false }
+    }
+
+    const targetPath = expandHomedir('~/.local/bin/dsh')
+    if (existsSync(targetPath)) {
+      return { supported: true, installed: true, path: targetPath }
+    }
+    return { supported: true, installed: false, path: targetPath }
   }
 }
 

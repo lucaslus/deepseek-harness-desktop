@@ -25,6 +25,10 @@ export const zh = {
   'action.reload': '重新加载',
   'warning.groupLoad': '{name} 加载失败：{message}',
   'empty.models': '没有可用的模型。',
+  'empty.search': '未找到匹配的模型。',
+  'search.placeholder': '搜索模型…',
+  'search.aria': '搜索模型',
+  'search.clear': '清除搜索',
   'blocked.composer': '当前模型不可用，请先选择模型',
   'empty.efforts': '当前模型未提供推理等级。',
 } satisfies Record<string, string>
@@ -49,6 +53,10 @@ export const en = {
   'action.reload': 'Reload',
   'warning.groupLoad': '{name} failed to load: {message}',
   'empty.models': 'No models available.',
+  'empty.search': 'No matching models found.',
+  'search.placeholder': 'Search models…',
+  'search.aria': 'Search models',
+  'search.clear': 'Clear search',
   'blocked.composer': 'This model is unavailable — select one to continue',
   'empty.efforts': 'This model provides no reasoning effort levels.',
 } satisfies Record<ModelKey, string>

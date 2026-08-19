@@ -16,14 +16,19 @@ import {
   type KeyboardEvent, type FocusEvent,
 } from 'react'
 import clsx from 'clsx'
-import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ModelProviderGroup, ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import {
   IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
-  IconWarningOutline16, ProviderBrandIcon, Toast,
+  IconCloseFill14, IconSearchOutline16, IconWarningOutline16, ProviderBrandIcon, Toast,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ModelSelectInjected } from './slots.ts'
 import css from './ModelSelect.module.css'
+
+/** Initial batch of models rendered in the model pane before scroll expansion. */
+const INITIAL_LIMIT = 40
+/** Step size for incremental model batch loading on scroll. */
+const PAGE_SIZE = 40
 
 /** Which pane the dropdown shows: the two-row root or one drilled-in list. */
 type Pane = 'root' | 'model' | 'effort'
@@ -52,6 +57,8 @@ export function ModelSelect(
   )
   const [open, setOpen] = useState(false)
   const [pane, setPane] = useState<Pane>('root')
+  const [search, setSearch] = useState('')
+  const [renderLimit, setRenderLimit] = useState(INITIAL_LIMIT)
   // The in-menu error strip serves catalog loads (its Retry re-runs the
   // load); a rejected SELECTION announces through the transient toast
   // instead, so the strip renders only while the latest failure-capable
@@ -61,6 +68,7 @@ export function ModelSelect(
   const toastSeq = useRef(0)
   const rootRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const searchRef = useRef<HTMLInputElement | null>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
   const id = useId()
 
@@ -76,6 +84,48 @@ export function ModelSelect(
           : { reasoningEffort: model.reasoning.defaultEffort },
       } satisfies ModelSelection,
     }))), [state.groups])
+
+  const filteredGroups = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (query === '') return state.groups
+    const result: ModelProviderGroup[] = []
+    for (const group of state.groups) {
+      const groupMatch = group.name.toLowerCase().includes(query) || group.id.toLowerCase().includes(query)
+      const matchingModels = group.models.filter(m =>
+        groupMatch
+        || m.name.toLowerCase().includes(query)
+        || m.id.toLowerCase().includes(query)
+        || (m.description?.toLowerCase().includes(query) ?? false),
+      )
+      if (matchingModels.length > 0) {
+        result.push({
+          ...group,
+          models: matchingModels,
+        })
+      }
+    }
+    return result
+  }, [state.groups, search])
+
+  const totalMatchingModels = useMemo(() =>
+    filteredGroups.reduce((acc, g) => acc + g.models.length, 0),
+  [filteredGroups],
+  )
+
+  const visibleGroups = useMemo(() => {
+    let remaining = renderLimit
+    const result: Array<{ group: ModelProviderGroup; models: ModelProviderGroup['models'] }> = []
+    for (const group of filteredGroups) {
+      if (remaining <= 0) break
+      const slice = group.models.slice(0, remaining)
+      if (slice.length > 0) {
+        result.push({ group, models: slice })
+        remaining -= slice.length
+      }
+    }
+    return result
+  }, [filteredGroups, renderLimit])
+
   const selectedIndex = state.current === null
     ? -1
     : choices.findIndex(c => c.selection.provider === state.current?.provider && c.selection.model === state.current.model)
@@ -124,10 +174,18 @@ export function ModelSelect(
     return () => { document.removeEventListener('mousedown', closeOutside) }
   }, [open])
 
+  useEffect(() => {
+    if (open && pane === 'model') {
+      searchRef.current?.focus()
+    }
+  }, [open, pane])
+
   if (!available) return null
 
   const show = (): void => {
     setPane('root')
+    setSearch('')
+    setRenderLimit(INITIAL_LIMIT)
     setOpen(true)
     reload()
   }
@@ -135,6 +193,8 @@ export function ModelSelect(
   const close = (restoreFocus = false): void => {
     setOpen(false)
     setPane('root')
+    setSearch('')
+    setRenderLimit(INITIAL_LIMIT)
     if (restoreFocus) queueMicrotask(() => { triggerRef.current?.focus() })
   }
 
@@ -149,6 +209,11 @@ export function ModelSelect(
   const onRootKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'Escape' && open) {
       event.preventDefault()
+      if (pane === 'model' && search !== '') {
+        setSearch('')
+        setRenderLimit(INITIAL_LIMIT)
+        return
+      }
       // Escape backs out of a drilled pane first, then closes.
       if (pane !== 'root') setPane('root')
       else close(true)
@@ -164,6 +229,26 @@ export function ModelSelect(
   const onBlur = (event: FocusEvent<HTMLDivElement>): void => {
     if (event.relatedTarget instanceof Node && rootRef.current?.contains(event.relatedTarget)) return
     close()
+  }
+
+  const onGroupsScroll = (event: React.UIEvent<HTMLDivElement>): void => {
+    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
+    if (scrollHeight - scrollTop - clientHeight < 80) {
+      if (renderLimit < totalMatchingModels) {
+        setRenderLimit(prev => Math.min(prev + PAGE_SIZE, totalMatchingModels))
+      }
+    }
+  }
+
+  const onSearchChange = (value: string): void => {
+    setSearch(value)
+    setRenderLimit(INITIAL_LIMIT)
+  }
+
+  const clearSearch = (): void => {
+    setSearch('')
+    setRenderLimit(INITIAL_LIMIT)
+    searchRef.current?.focus()
   }
 
   const settleSelection = (accepted: boolean): void => {
@@ -282,6 +367,30 @@ export function ModelSelect(
 
           {pane === 'model' && (
             <>
+              <div className={css.searchWrap}>
+                <div className={css.searchBox}>
+                  <span className={css.searchIcon}><IconSearchOutline16 size={14} /></span>
+                  <input
+                    ref={searchRef}
+                    className={css.searchInput}
+                    type="text"
+                    placeholder={t('search.placeholder')}
+                    aria-label={t('search.aria')}
+                    value={search}
+                    onChange={(e) => { onSearchChange(e.target.value) }}
+                  />
+                  {search !== '' && (
+                    <button
+                      type="button"
+                      className={css.searchClear}
+                      aria-label={t('search.clear')}
+                      onClick={clearSearch}
+                    >
+                      <IconCloseFill14 size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
               {state.status === 'loading' && (
                 <div className={css.status}>{t('status.loading')}</div>
               )}
@@ -297,8 +406,8 @@ export function ModelSelect(
                   <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
                 </div>
               ))}
-              <div className={clsx(css.groups, 'scrollable')}>
-                {state.groups.map((group) => {
+              <div className={clsx(css.groups, 'scrollable')} onScroll={onGroupsScroll}>
+                {visibleGroups.map(({ group, models }) => {
                   const headingId = `${id}-${group.id}`
                   return (
                     <section role="group" aria-labelledby={headingId} className={css.group} key={group.id}>
@@ -306,7 +415,7 @@ export function ModelSelect(
                         <ProviderBrandIcon provider={group.id} brandIcon={group.brandIcon} size={16} />
                         <span>{group.name}</span>
                       </div>
-                      {group.models.map((model) => {
+                      {models.map((model) => {
                         const selected = state.current?.provider === group.id && state.current.model === model.id
                         return (
                           <button
@@ -339,6 +448,9 @@ export function ModelSelect(
               </div>
               {state.status === 'ready' && choices.length === 0 && (
                 <div className={css.empty}>{t('empty.models')}</div>
+              )}
+              {state.status === 'ready' && choices.length > 0 && totalMatchingModels === 0 && (
+                <div className={css.empty}>{t('empty.search')}</div>
               )}
             </>
           )}

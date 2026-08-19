@@ -1947,6 +1947,18 @@ importers:
         specifier: ~18.3.1
         version: 18.3.31
 
+  packages/client/ui-directory-flow:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: workspace:^
+        version: link:../ui-slots
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+
   packages/client/ui-directory-picker-browse:
     dependencies:
       clsx:
